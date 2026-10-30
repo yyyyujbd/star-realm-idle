@@ -226,6 +226,15 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none;color:
 .train-box .f-bonus{font-size:12px;color:#3b5b8a;margin:6px 0 10px;line-height:1.6}
 .train-row{display:flex;gap:8px}
 .train-select{flex:1;padding:8px;border-radius:9px;border:1px solid var(--border);background:#fff;font-family:inherit;font-size:12px;min-width:0}
+.offer-box{padding:14px;border-radius:14px;background:linear-gradient(135deg,#f3f0ff,#eae4ff);border:1px solid #d3c7f2;margin-bottom:12px}
+.offer-box .f-head{font-weight:800;font-size:14px;color:#6d28d9;display:flex;align-items:center;gap:8px}
+.offer-box .f-bonus{font-size:12px;color:#5b4a8a;margin:6px 0 10px;line-height:1.6}
+.offer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.offer-card{display:flex;align-items:center;gap:8px;padding:9px;border-radius:10px;background:#fff;border:1px solid #e4dcf7}
+.offer-card .e{font-size:20px}
+.offer-card .nm{flex:1;font-size:12px;font-weight:700;color:#3d3360;line-height:1.3}
+.offer-card .nm small{display:block;font-weight:400;color:var(--muted);font-size:10px}
+.offer-card .btn{flex:0 0 auto;font-size:11px;padding:5px 8px}
 
 /* ===== Tooltip / Toast / Modal ===== */
 #tooltip{
@@ -999,6 +1008,35 @@ const RELICS = [
    obtain:{type:'skillXp', skillId:'hitpoints', need:200000}},
 ];
 const RELICS_MAP = Object.fromEntries(RELICS.map(r=>[r.id,r]));
+/* 特有道具参与神器制作：每件神器都需消耗本职业特有道具作为核心材料 */
+RELICS.forEach(r=>{ r.trophy='trophy_'+r.skillId; });
+
+/* ================= 数据：职业特有道具 ================= */
+/* 每个职业的采集/生产/战斗活动有 0.001% 概率掉落本职业特有道具。
+   特有道具可：① 使用（触发该职业专属强效 buff）② 出售（大量金币）③ 作为对应神器制作核心材料。
+   每个道具的作用效果各不相同。 */
+const TROPHIES = [
+  {id:'trophy_milking',        skillId:'milking',        name:'星核晶体', icon:'💎', val:80000,  desc:'采晶速度+60%·经验+40%（30分钟）', effects:[{type:'skill', skillId:'milking', speed:1.6, xp:1.4, dur:1800}]},
+  {id:'trophy_foraging',       skillId:'foraging',       name:'生命之露', icon:'🌱', val:80000,  desc:'全局效率+25%·全局经验+25%（30分钟）', effects:[{type:'buff', buff:'speed', mult:1.25, dur:1800},{type:'buff', buff:'xp', mult:1.25, dur:1800}]},
+  {id:'trophy_woodcutting',    skillId:'woodcutting',    name:'世界树嫩枝', icon:'🌿', val:80000,  desc:'伐木速度+60%·全局经验+15%（30分钟）', effects:[{type:'skill', skillId:'woodcutting', speed:1.6, xp:1.15, dur:1800},{type:'buff', buff:'xp', mult:1.15, dur:1800}]},
+  {id:'trophy_mining',         skillId:'mining',         name:'大地之心', icon:'🪨', val:80000,  desc:'战斗伤害+25%·攻速+15%（30分钟）', effects:[{type:'buff', buff:'dmg', mult:1.25, dur:1800},{type:'buff', buff:'atkspeed', mult:1.15, dur:1800}]},
+  {id:'trophy_fishing',        skillId:'fishing',        name:'深渊珍珠', icon:'🫧', val:80000,  desc:'全局金币+50%（30分钟）', effects:[{type:'buff', buff:'gold', mult:1.5, dur:1800}]},
+  {id:'trophy_cheesesmithing', skillId:'cheesesmithing', name:'创世火花', icon:'🔥', val:100000, desc:'锻造速度+60%·战斗伤害+15%（30分钟）', effects:[{type:'skill', skillId:'cheesesmithing', speed:1.6, xp:1.15, dur:1800},{type:'buff', buff:'dmg', mult:1.15, dur:1800}]},
+  {id:'trophy_crafting',       skillId:'crafting',       name:'神匠图鉴', icon:'📖', val:100000, desc:'制作速度+60%·全局经验+20%（30分钟）', effects:[{type:'skill', skillId:'crafting', speed:1.6, xp:1.2, dur:1800},{type:'buff', buff:'xp', mult:1.2, dur:1800}]},
+  {id:'trophy_tailoring',      skillId:'tailoring',      name:'命运丝线', icon:'🧶', val:100000, desc:'生命上限+30%（30分钟）', effects:[{type:'buff', buff:'hp', mult:1.3, dur:1800}]},
+  {id:'trophy_cooking',        skillId:'cooking',        name:'传说食材', icon:'🍖', val:100000, desc:'生命上限+25%·减伤+10%（30分钟）', effects:[{type:'buff', buff:'hp', mult:1.25, dur:1800},{type:'buff', buff:'def', mult:1.1, dur:1800}]},
+  {id:'trophy_brewing',        skillId:'brewing',        name:'不朽茶韵', icon:'🍵', val:100000, desc:'全局效率+25%·全局经验+20%（30分钟）', effects:[{type:'buff', buff:'speed', mult:1.25, dur:1800},{type:'buff', buff:'xp', mult:1.2, dur:1800}]},
+  {id:'trophy_alchemy',        skillId:'alchemy',        name:'贤者精华', icon:'⚗️', val:100000, desc:'全局金币+30%·攻速+15%（30分钟）', effects:[{type:'buff', buff:'gold', mult:1.3, dur:1800},{type:'buff', buff:'atkspeed', mult:1.15, dur:1800}]},
+  {id:'trophy_melee',          skillId:'melee',          name:'破晓剑芒', icon:'⚔️', val:120000, desc:'战斗伤害+35%·攻速+20%（30分钟）', effects:[{type:'buff', buff:'dmg', mult:1.35, dur:1800},{type:'buff', buff:'atkspeed', mult:1.2, dur:1800}]},
+  {id:'trophy_ranged',         skillId:'ranged',         name:'苍穹箭羽', icon:'🏹', val:120000, desc:'战斗伤害+35%·命中+15%（30分钟）', effects:[{type:'buff', buff:'dmg', mult:1.35, dur:1800},{type:'buff', buff:'acc', mult:1.15, dur:1800}]},
+  {id:'trophy_magic',          skillId:'magic',          name:'群星法球', icon:'🔮', val:120000, desc:'战斗伤害+35%·全局经验+20%（30分钟）', effects:[{type:'buff', buff:'dmg', mult:1.35, dur:1800},{type:'buff', buff:'xp', mult:1.2, dur:1800}]},
+  {id:'trophy_defence',        skillId:'defence',        name:'不灭护符', icon:'🛡️', val:120000, desc:'减伤+25%·生命上限+20%（30分钟）', effects:[{type:'buff', buff:'def', mult:1.25, dur:1800},{type:'buff', buff:'hp', mult:1.2, dur:1800}]},
+  {id:'trophy_hitpoints',      skillId:'hitpoints',      name:'永恒血滴', icon:'❤️', val:120000, desc:'生命上限+40%·减伤+10%（30分钟）', effects:[{type:'buff', buff:'hp', mult:1.4, dur:1800},{type:'buff', buff:'def', mult:1.1, dur:1800}]},
+];
+TROPHIES.forEach(t=>{ ITEMS[t.id]={name:t.name, icon:t.icon, cat:'trophy', val:t.val, desc:t.desc, trophy:true}; });
+const TROPHY_MAP = Object.fromEntries(TROPHIES.map(t=>[t.id,t]));
+function trophyOf(skillId){ return TROPHY_MAP['trophy_'+skillId] || null; }
+
 const RELIC_BONUS_LABEL = {
   skillSpeed:{name:'技能速度', icon:'⚡'},
   styleDmg:{name:'风格伤害', icon:'💥'},
@@ -1085,9 +1123,9 @@ function defaultState(){
     activeSkill:'milking', action:null,
     combat:{active:false, style:'melee', monsterId:'slime', monsterHp:12, playerHp:20, atkTimer:0, monTimer:0, autoEat:null, threshold:50},
     buffs:{}, log:[], lastSave:Date.now(), rightTab:'char',
-    achievements:{}, tasks:[], stats:{gather:0, craft:0, sold:0, bought:0, consumed:0, fed:0, offlines:0, enchantOk:0, kills:{}, relicProduce:{}, relicDmgTaken:0, relicSkillXp:{}},
-    tools:{}, enchants:{}, relics:{},
-    fortune:{level:0},
+    achievements:{}, tasks:[], stats:{gather:0, craft:0, sold:0, bought:0, consumed:0, fed:0, offlines:0, enchantOk:0, offerings:0, kills:{}, relicProduce:{}, relicDmgTaken:0, relicSkillXp:{}},
+    tools:{}, enchants:{}, relics:{}, relicReady:{},
+    fortune:{level:0}, perma:{},
     pets:defaultPets(), activePet:'cat',
   };
 }
@@ -1107,14 +1145,16 @@ function mergeState(s){
   out.action=s.action||null;
   out.achievements=s.achievements||{};
   out.tasks=(Array.isArray(s.tasks)&&s.tasks.length)?s.tasks:[];
-  out.stats={gather:0, craft:0, sold:0, bought:0, consumed:0, fed:0, offlines:0, enchantOk:0, kills:{}, relicProduce:{}, relicDmgTaken:0, relicSkillXp:{}, ...(s.stats||{})};
+  out.stats={gather:0, craft:0, sold:0, bought:0, consumed:0, fed:0, offlines:0, enchantOk:0, offerings:0, kills:{}, relicProduce:{}, relicDmgTaken:0, relicSkillXp:{}, ...(s.stats||{})};
   out.stats.kills=(s.stats && s.stats.kills)||{};
   out.stats.relicProduce=(s.stats && s.stats.relicProduce)||{};
   out.stats.relicSkillXp=(s.stats && s.stats.relicSkillXp)||{};
   out.tools=s.tools||{};
   out.enchants=s.enchants||{};
   out.relics=s.relics||{};
+  out.relicReady=s.relicReady||{};
   out.fortune={level:0, ...(s.fortune||{})};
+  out.perma=s.perma||{};
   out.pets={...defaultPets(), ...(s.pets||{})};
   for(const id in out.pets){ if(!out.pets[id].stage) out.pets[id].stage=1; }
   if(out.activePet && (!out.pets[out.activePet] || !out.pets[out.activePet].owned)) out.activePet=null;
@@ -1227,13 +1267,13 @@ function doCloudLogout(){
 /* ================= 等级/经验 ================= */
 function lvl(skillId){ return state.skills[skillId].level; }
 function addGold(n){
-  const v=Math.floor(n*(1+passiveGlobal('gold')+petBonus('gold')+achievementBonus('gold')+relicBonus('gold')+fortuneBonus('gold'))*buffMult('gold'));
+  const v=Math.floor(n*(1+passiveGlobal('gold')+petBonus('gold')+achievementBonus('gold')+relicBonus('gold')+fortuneBonus('gold')+permaBonus('gold'))*buffMult('gold'));
   state.gold+=v; return v;
 }
 function addXp(skillId, amount, silent){
   const s=state.skills[skillId];
   const before=s.level;
-  s.xp+=amount*(1+passiveGlobal('xp')+petBonus('xp')+achievementBonus('xp')+relicBonus('xp')+fortuneBonus('xp'));
+  s.xp+=amount*(1+passiveGlobal('xp')+petBonus('xp')+achievementBonus('xp')+relicBonus('xp')+fortuneBonus('xp')+permaBonus('xp'))*buffMult('xp');
   state.stats.relicSkillXp[skillId]=(state.stats.relicSkillXp[skillId]||0)+amount;
   const after=levelFromXp(s.xp);
   if(after>before){
@@ -1453,42 +1493,76 @@ function relicBonus(type, skillId){
   }
   return v;
 }
-function unlockRelic(id){
-  if(state.relics[id]) return;
-  const r=RELICS_MAP[id]; if(!r) return;
+function grantRelic(id){
+  const r=RELICS_MAP[id]; if(!r || state.relics[id]) return;
+  if(r.trophy) removeItem(r.trophy, 1);
+  delete state.relicReady[id];
   state.relics[id]=true;
   toast('🏆 获得神器：'+r.icon+' '+r.name+'！');
   pushLog('🏆 获得毕业神器：'+r.icon+' '+r.name,'loot');
   checkAchievements();
   saveState(); renderAll();
 }
+/* 激活神器：条件已满足且持有本职业特有道具时，消耗前置材料并解锁；缺道具则暂存待激活 */
+function activateRelic(id){
+  const r=RELICS_MAP[id]; if(!r || state.relics[id]) return;
+  if(r.trophy && countItem(r.trophy)<=0){ state.relicReady[id]=true; return; }
+  if(r.obtain.type==='fragment') removeItem(r.obtain.shardId, r.obtain.need);
+  grantRelic(id);
+}
+function tryActivateReadyRelics(){
+  for(const id in state.relicReady){
+    const r=RELICS_MAP[id];
+    if(r && state.relicReady[id] && !state.relics[id] && (!r.trophy || countItem(r.trophy)>0)) activateRelic(id);
+  }
+}
 function craftRelic(id){
   const r=RELICS_MAP[id];
   if(!r || r.obtain.type!=='craft') return;
   if(state.relics[id]){ toast('已拥有该神器'); return; }
   if(lvl(r.skillId)<r.obtain.needLevel){ toast('需要 '+SKILL_MAP[r.skillId].name+' '+r.obtain.needLevel+' 级'); return; }
+  if(r.trophy && countItem(r.trophy)<=0){ toast('缺少特有道具 '+ITEMS[r.trophy].name+'（该技能行动 0.001% 概率掉落）'); return; }
   const c=r.obtain.cost;
   if(state.gold<c.gold){ toast('金币不足'); return; }
   if(!hasItems(c.items)){ toast('材料不足'); return; }
   state.gold-=c.gold;
   for(const k in c.items) removeItem(k, c.items[k]);
-  unlockRelic(id);
+  grantRelic(id);
 }
 function checkRelics(){
   RELICS.forEach(r=>{
     if(state.relics[r.id]) return;
     const o=r.obtain;
-    if(o.type==='fragment' && countItem(o.shardId)>=o.need){
-      removeItem(o.shardId, o.need);
-      unlockRelic(r.id);
-    } else if(o.type==='produce' && (state.stats.relicProduce[r.id]||0)>=o.need){
-      unlockRelic(r.id);
-    } else if(o.type==='dmgTaken' && (state.stats.relicDmgTaken||0)>=o.need){
-      unlockRelic(r.id);
-    } else if(o.type==='skillXp' && (state.stats.relicSkillXp[r.id]||0)>=o.need){
-      unlockRelic(r.id);
-    }
+    if(o.type==='fragment' && countItem(o.shardId)>=o.need) activateRelic(r.id);
+    else if(o.type==='produce' && (state.stats.relicProduce[r.id]||0)>=o.need) activateRelic(r.id);
+    else if(o.type==='dmgTaken' && (state.stats.relicDmgTaken||0)>=o.need) activateRelic(r.id);
+    else if(o.type==='skillXp' && (state.stats.relicSkillXp[r.id]||0)>=o.need) activateRelic(r.id);
   });
+}
+/* 特有道具掉落（0.001%）：加入背包并尝试激活已满足条件的神器 */
+function dropTrophy(skillId){
+  const t=trophyOf(skillId);
+  if(!t) return;
+  addItem(t.id, 1);
+  toast('🌟 稀有掉落！'+t.icon+' '+t.name+'！');
+  pushLog('🌟 极其稀有的掉落：'+t.icon+' '+t.name+'（可出售 / 使用 / 制作神器）','loot');
+  tryActivateReadyRelics();
+  checkAchievements();
+  saveState();
+}
+/* 使用特有道具：触发该职业专属强效 buff（效果各不相同） */
+function useTrophy(id){
+  const t=TROPHY_MAP[id];
+  if(!t || countItem(id)<=0) return;
+  removeItem(id, 1);
+  t.effects.forEach(e=>{
+    if(e.type==='skill') applySkillBuff(e.skillId, e.speed, e.xp, e.dur);
+    else applyBuff(e.buff, e.mult, e.dur);
+  });
+  state.stats.consumed++;
+  toast('✨ 使用 '+t.name+'：'+t.desc);
+  pushLog('使用特有道具：'+t.icon+' '+t.name+'（'+t.desc+'）','loot');
+  saveState(); renderAll();
 }
 function relBonusText(b){
   const pct='+'+Math.round(b.value*100)+'%';
@@ -1536,6 +1610,9 @@ const BUFF_INFO = {
   atkspeed:{name:'攻速提升', icon:'⚡', desc:'攻击速度提升'},
   def:     {name:'减伤提升', icon:'🛡️', desc:'受到的伤害降低'},
   gold:    {name:'金币获取', icon:'💰', desc:'金币获取提升'},
+  xp:      {name:'经验获取', icon:'⭐', desc:'经验获取提升'},
+  hp:      {name:'生命上限', icon:'❤️', desc:'生命上限提升'},
+  acc:     {name:'命中率', icon:'🎯', desc:'命中率提升'},
 };
 function applyBuff(buff, mult, dur){
   const now=Date.now();
@@ -1557,7 +1634,7 @@ function skillBuff(skillId){
 }
 function actionSpeedMult(skillId){
   const t=toolFor(skillId), sb=skillBuff(skillId);
-  return buffMult('speed')*passiveSpeed(skillId)*(t?t.speed:1)*(sb?sb.speed:1)*(1+petBonus('speed')+achievementBonus('speed')+relicBonus('skillSpeed', skillId)+fortuneBonus('speed'));
+  return buffMult('speed')*passiveSpeed(skillId)*(t?t.speed:1)*(sb?sb.speed:1)*(1+petBonus('speed')+achievementBonus('speed')+relicBonus('skillSpeed', skillId)+fortuneBonus('speed')+permaBonus('speed'));
 }
 function actionXpMult(skillId){
   const t=toolFor(skillId), sb=skillBuff(skillId);
@@ -1591,7 +1668,7 @@ function useConsumable(itemId){
 /* ================= 金币用途：财神供奉 / 技能训练 ================= */
 const FORTUNE_MAX_LEVEL = 60;
 /* 供奉财神：每升一级所需金币指数上升（×1.5），提供永久全局加成 */
-function fortuneCost(nextLevel){ return Math.floor(150 * Math.pow(1.5, nextLevel-1)); }
+function fortuneCost(nextLevel){ return Math.floor(500 * Math.pow(1.6, nextLevel-1)); }
 function fortuneLevel(){ return state.fortune.level || 0; }
 function fortuneBonus(type){
   const lv=fortuneLevel();
@@ -1630,7 +1707,7 @@ function worshipFortune(){
   saveState(); renderAll();
 }
 /* 技能速成训练：花费金币直接提升 1 级，价格随等级指数上升 */
-function trainCost(skillId){ const L=lvl(skillId); return Math.floor(25 * Math.pow(1.4, L-1)); }
+function trainCost(skillId){ const L=lvl(skillId); return Math.floor(100 * Math.pow(1.5, L-1)); }
 function trainSkill(skillId){
   const s=state.skills[skillId];
   if(!s) return;
@@ -1652,6 +1729,83 @@ function trainSelected(){
   const sel=document.getElementById('train-skill');
   if(!sel || !sel.value) return;
   trainSkill(sel.value);
+}
+
+/* ================= 祭坛供奉：上交大量物品换取临时增益 ================= */
+const OFFERINGS = [
+  {id:'offer_speed',    name:'丰收祭', icon:'🌾', itemId:'fiber1', need:10000, buff:'speed',    mult:1.35, dur:2*60*60},
+  {id:'offer_xp',       name:'智慧祭', icon:'📜', itemId:'herb1',  need:10000, buff:'xp',       mult:1.40, dur:2*60*60},
+  {id:'offer_gold',     name:'财富祭', icon:'💰', itemId:'milk1',  need:12000, buff:'gold',     mult:1.60, dur:2*60*60},
+  {id:'offer_dmg',      name:'战意祭', icon:'⚔️', itemId:'ore1',   need:12000, buff:'dmg',      mult:1.40, dur:2*60*60},
+  {id:'offer_atkspeed', name:'迅捷祭', icon:'💨', itemId:'log1',   need:15000, buff:'atkspeed', mult:1.30, dur:2*60*60},
+  {id:'offer_def',      name:'守护祭', icon:'🛡️', itemId:'fish1',  need:15000, buff:'def',      mult:1.40, dur:2*60*60},
+  {id:'offer_hp',       name:'生命祭', icon:'❤️', itemId:'stone1', need:10000, buff:'hp',       mult:1.50, dur:2*60*60},
+  {id:'offer_acc',      name:'精准祭', icon:'🎯', itemId:'plank1', need:12000, buff:'acc',      mult:1.20, dur:2*60*60},
+];
+function offerItem(offerId){
+  const o=OFFERINGS.find(x=>x.id===offerId);
+  if(!o) return;
+  const it=ITEMS[o.itemId];
+  const have=countItem(o.itemId);
+  if(have<o.need){ toast('材料不足：'+o.name+' 需 '+fmt(o.need)+' 个 '+it.name+'（当前 '+fmt(have)+'）'); return; }
+  removeItem(o.itemId, o.need);
+  applyBuff(o.buff, o.mult, o.dur);
+  state.stats.offerings=(state.stats.offerings||0)+1;
+  const info=BUFF_INFO[o.buff];
+  toast('🙏 '+o.name+' 供奉完成：'+info.name+' +'+Math.round((o.mult-1)*100)+'%！');
+  pushLog('🙏 祭坛供奉：'+o.name+'（'+fmt(o.need)+'×'+it.name+' → '+info.name+' +'+Math.round((o.mult-1)*100)+'%）','loot');
+  checkAchievements();
+  saveState(); renderAll();
+}
+
+/* ================= 永久神龛：供奉低概率产物换取永久全局加成 ================= */
+/* 供奉物为采矿/钓鱼的低概率产物（宝石/稀有鱼/宝箱）；0.001% 特有道具不可供奉 */
+const PERMA_OFFERINGS = [
+  {id:'perm_gem1',    itemId:'gem1',      buff:'gold',     inc:0.010},
+  {id:'perm_gem2',    itemId:'gem2',      buff:'speed',    inc:0.015},
+  {id:'perm_gem3',    itemId:'gem3',      buff:'dmg',      inc:0.020},
+  {id:'perm_gem4',    itemId:'gem4',      buff:'hp',       inc:0.025},
+  {id:'perm_gem5',    itemId:'gem5',      buff:'atkspeed', inc:0.030},
+  {id:'perm_fish1',   itemId:'rarefish1', buff:'xp',       inc:0.010},
+  {id:'perm_fish2',   itemId:'rarefish2', buff:'gold',     inc:0.015},
+  {id:'perm_fish3',   itemId:'rarefish3', buff:'def',      inc:0.020},
+  {id:'perm_fish4',   itemId:'rarefish4', buff:'acc',      inc:0.025},
+  {id:'perm_fish5',   itemId:'rarefish5', buff:'dmg',      inc:0.030},
+  {id:'perm_chest1',  itemId:'chest1',    buff:'gold',     inc:0.010},
+  {id:'perm_chest2',  itemId:'chest2',    buff:'dmg',      inc:0.015},
+  {id:'perm_chest3',  itemId:'chest3',    buff:'hp',       inc:0.020},
+  {id:'perm_chest4',  itemId:'chest4',    buff:'speed',    inc:0.025},
+  {id:'perm_chest5',  itemId:'chest5',    buff:'xp',       inc:0.030},
+];
+function permNeed(id){ return 1 + (state.perma[id]||0); }
+function permOffer(id){
+  const o=PERMA_OFFERINGS.find(x=>x.id===id);
+  if(!o) return;
+  const done=state.perma[id]||0;
+  const need=permNeed(id);
+  const it=ITEMS[o.itemId];
+  const have=countItem(o.itemId);
+  if(have<need){ toast('材料不足：'+it.name+' 需 '+need+' 个（当前 '+have+'）'); return; }
+  removeItem(o.itemId, need);
+  state.perma[id]=done+1;
+  const info=BUFF_INFO[o.buff];
+  toast('⛩️ 永久供奉 '+it.name+'：'+info.name+' 永久 +'+Math.round(o.inc*100)+'%！');
+  pushLog('⛩️ 永久供奉：'+it.name+' ×'+need+' → '+info.name+' 永久 +'+Math.round(o.inc*100)+'%','loot');
+  checkAchievements();
+  saveState(); renderAll();
+}
+function permaBonus(type){
+  let v=0;
+  PERMA_OFFERINGS.forEach(o=>{ if(o.buff===type) v+=(state.perma[o.id]||0)*o.inc; });
+  return v;
+}
+function permaDesc(){
+  const parts=[];
+  for(const t in BUFF_INFO){
+    const v=permaBonus(t);
+    if(v>0) parts.push(BUFF_INFO[t].icon+' '+BUFF_INFO[t].name+' +'+Math.round(v*100)+'%');
+  }
+  return parts.join('　') || '尚未供奉，上交低概率产物（宝石/稀有鱼/宝箱）获得永久加成';
 }
 
 /* ================= 动作系统 ================= */
@@ -1724,6 +1878,8 @@ function completeAction(silent, report){
         toast('✨ 获得 '+ITEMS[r.obtain.shardId].name+'！');
       }
     });
+    // 本职业特有道具掉落（0.001%）
+    if(Math.random()<0.00001) dropTrophy(state.action.skillId);
     checkRelics();
     checkAchievements(); updateTasks('gold',{});
   }
@@ -1744,12 +1900,12 @@ function playerStats(){
   }
   const accId=state.equipment['accessory']; if(accId){ const acc=EQUIPMENT[accId], m=eqStatMult(accId); accDmg+=Math.floor(acc.stats.damage*m); hp+=Math.floor(acc.stats.hp*m); }
   const pouchId=state.equipment['pouch']; if(pouchId){ hp+=Math.floor(EQUIPMENT[pouchId].stats.hp*eqStatMult(pouchId)); }
-  const maxHit=Math.floor((4+slv*1.4+wdmg+accDmg)*buffMult('dmg')*(1+passiveGlobal('dmg')+petBonus('dmg')+achievementBonus('dmg')+relicBonus('dmg')+relicBonus('styleDmg', style)+fortuneBonus('dmg')));
-  const accuracy=Math.min(0.97, 0.75+slv*0.003+passiveGlobal('acc')+achievementBonus('acc')+relicBonus('acc'));
+  const maxHit=Math.floor((4+slv*1.4+wdmg+accDmg)*buffMult('dmg')*(1+passiveGlobal('dmg')+petBonus('dmg')+achievementBonus('dmg')+relicBonus('dmg')+relicBonus('styleDmg', style)+fortuneBonus('dmg')+permaBonus('dmg')));
+  const accuracy=Math.min(0.97, (0.75+slv*0.003+passiveGlobal('acc')+achievementBonus('acc')+relicBonus('acc')+permaBonus('acc'))*buffMult('acc'));
   const reduction=dlv*0.35+def*0.5;
-  const maxHP=Math.floor((20+hlv*4+hp)*(1+passiveGlobal('hp')+petBonus('hp')+achievementBonus('hp')+relicBonus('hp')));
+  const maxHP=Math.floor((20+hlv*4+hp)*(1+passiveGlobal('hp')+petBonus('hp')+achievementBonus('hp')+relicBonus('hp')+permaBonus('hp'))*buffMult('hp'));
   const baseInterval = style==='melee'?2.4 : style==='ranged'?2.6 : 2.8;
-  const atkInterval=baseInterval/(buffMult('atkspeed')*(1+petBonus('atkspeed')+achievementBonus('atkspeed')+relicBonus('atkspeed')+fortuneBonus('atkspeed')));
+  const atkInterval=baseInterval/(buffMult('atkspeed')*(1+petBonus('atkspeed')+achievementBonus('atkspeed')+relicBonus('atkspeed')+fortuneBonus('atkspeed')+permaBonus('atkspeed')));
   return {maxHit, accuracy, reduction, maxHP, atkInterval, styleLevel:slv};
 }
 function setStyle(style){ state.combat.style=style; renderAll(); }
@@ -1806,7 +1962,7 @@ function monsterAttack(){
   const m=MONSTER_MAP[state.combat.monsterId];
   const ps=playerStats();
   const raw=Math.max(1, Math.floor((m.maxHit-ps.reduction)*rnd(0.85,1.05)));
-  const dmg=Math.max(1, Math.floor(raw/buffMult('def')*Math.max(0, 1-passiveGlobal('def')-petBonus('def')-achievementBonus('def')-relicBonus('def'))));
+  const dmg=Math.max(1, Math.floor(raw/buffMult('def')*Math.max(0, 1-passiveGlobal('def')-petBonus('def')-achievementBonus('def')-relicBonus('def')-fortuneBonus('def')-permaBonus('def'))));
   state.combat.playerHp-=dmg;
   state.stats.relicDmgTaken=(state.stats.relicDmgTaken||0)+dmg;
   addXp('hitpoints', Math.max(1,Math.floor(dmg*0.3)), true);
@@ -1837,8 +1993,12 @@ function onMonsterDefeated(){
   // 神器 Boss 掉落
   RELICS.forEach(r=>{
     if(state.relics[r.id] || r.obtain.type!=='bossDrop') return;
-    if(r.obtain.monsterId===m.id && Math.random()<r.obtain.chance) unlockRelic(r.id);
+    if(r.obtain.monsterId===m.id && Math.random()<r.obtain.chance) activateRelic(r.id);
   });
+  // 战斗职业特有道具掉落（0.001%：风格 / 防御 / 生命）
+  if(Math.random()<0.00001) dropTrophy(style);
+  if(Math.random()<0.00001) dropTrophy('defence');
+  if(Math.random()<0.00001) dropTrophy('hitpoints');
   // 重生同种怪
   state.combat.monsterHp=m.hp;
   state.combat.atkTimer=0;
@@ -1996,6 +2156,12 @@ const ACHIEVEMENTS = [
   {id:'relic_all', name:'众神黄昏', desc:'集齐全部 16 件毕业神器', icon:'👑', gold:50000, bonus:{type:'dmg', value:0.10}, check:()=>relicCount()>=RELICS.length},
   {id:'evolve_1', name:'初次进化', desc:'任意宠物进化一次', icon:'🦋', gold:500, check:()=>PETS.some(p=>state.pets[p.id] && state.pets[p.id].owned && (state.pets[p.id].stage||1)>=2)},
   {id:'evolve_3', name:'完全进化', desc:'任意宠物进化到最终形态', icon:'🌈', gold:5000, bonus:{type:'hp', value:0.05}, check:()=>PETS.some(p=>state.pets[p.id] && state.pets[p.id].owned && (state.pets[p.id].stage||1)>=3)},
+  // —— 祭坛供奉 ——
+  {id:'offer_1', name:'祭坛初献', desc:'完成一次祭坛供奉', icon:'⛩️', gold:500, check:()=>(state.stats.offerings||0)>=1},
+  {id:'offer_10', name:'供奉信徒', desc:'累计完成 10 次祭坛供奉', icon:'🙏', gold:3000, bonus:{type:'speed', value:0.05}, check:()=>(state.stats.offerings||0)>=10},
+  // —— 永久神龛 ——
+  {id:'perm_1', name:'永久供奉', desc:'完成一次永久神龛供奉', icon:'⛩️', gold:1000, check:()=>Object.values(state.perma).reduce((a,b)=>a+b,0)>=1},
+  {id:'perm_20', name:'神龛常青', desc:'累计永久供奉 20 次', icon:'🌟', gold:5000, bonus:{type:'gold', value:0.05}, check:()=>Object.values(state.perma).reduce((a,b)=>a+b,0)>=20},
 ];
 function anySkillLvl(n){ return SKILLS.some(s=>lvl(s.id)>=n); }
 function totalLevel(){ return SKILLS.reduce((a,s)=>a+lvl(s.id),0); }
@@ -2357,6 +2523,12 @@ function renderChar(body){
     const ft=fortuneDesc(fortuneLevel()).split('　').map(s=>`<div class="stat-row"><span>${s}</span></div>`).join('');
     fortuneHtml=`<div class="char-block"><h3>🙏 财神庇佑（Lv.${fortuneLevel()}）</h3>${ft}</div>`;
   }
+  let permaHtml='';
+  const totalPerma=Object.values(state.perma).reduce((a,b)=>a+b,0);
+  if(totalPerma>0){
+    const pt=permaDesc().split('　').map(s=>`<div class="stat-row"><span>${s}</span></div>`).join('');
+    permaHtml=`<div class="char-block"><h3>⛩️ 永久神龛（供奉 ${totalPerma} 次）</h3>${pt}</div>`;
+  }
   let buffs='';
   cleanupBuffs();
   const bs=Object.keys(state.buffs);
@@ -2411,7 +2583,7 @@ function renderChar(body){
       <div class="kv" style="margin-bottom:6px"><span>触发阈值</span><b id="thr-val">${state.combat.threshold}%</b></div>
       <input type="range" min="10" max="90" step="5" value="${state.combat.threshold}" style="width:100%" id="thr-range">
     </div>
-    ${petHtml}${achHtml}${fortuneHtml}${passiveHtml}${buffs}
+    ${petHtml}${achHtml}${fortuneHtml}${permaHtml}${passiveHtml}${buffs}
     <div class="char-block"><h3>⚔️ 战斗风格</h3>
       <div class="style-pick">${STYLES.map(st=>`<button class="style-btn ${state.combat.style===st.id?'active':''}" onclick="setStyle('${st.id}')"><span class="e">${st.icon}</span>${st.name}</button>`).join('')}</div>
     </div>`;
@@ -2466,10 +2638,10 @@ function renderBank(body){
     const list=keys.filter(k=>!q || ITEMS[k].name.includes(q));
     if(!list.length){ grid.innerHTML=`<div class="bank-empty">${q?'没有匹配的物品':'背包空空如也'}</div>`; return; }
     grid.innerHTML=list.map(k=>{
-      const it=ITEMS[k], isEq=!!EQUIPMENT[k], isTool=!!TOOLS[k];
+      const it=ITEMS[k], isEq=!!EQUIPMENT[k], isTool=!!TOOLS[k], isTrophy=it.cat==='trophy';
       const qty=state.bank[k];
       return `<div class="bank-item" onmouseenter="tipItem(event,'${k}')" onmouseleave="untip()" onclick="clickBank('${k}')">
-        ${isEq?'<span class="eq-tag">装备</span>':isTool?'<span class="eq-tag" style="background:var(--accent)">工具</span>':''}
+        ${isEq?'<span class="eq-tag">装备</span>':isTool?'<span class="eq-tag" style="background:var(--accent)">工具</span>':isTrophy?'<span class="eq-tag" style="background:var(--gold)">特有</span>':''}
         <span class="e">${it.icon}</span><span class="n">${esc(it.name)}</span>
         <span class="q">${fmt(qty)}</span>
       </div>`;
@@ -2497,6 +2669,15 @@ function clickBank(id){
       <div class="modal-actions" style="justify-content:flex-start">
         <button class="btn btn-primary" onclick="equipTool('${id}');closeModal()">装备</button>
         <button class="btn btn-danger" onclick="sellItem('${id}',1);closeModal()">出售</button>
+      </div>`);
+  } else if(it.trophy){
+    const r=RELICS_MAP['relic_'+TROPHY_MAP[id].skillId];
+    showModal(it.icon+' '+it.name, `
+      <div class="offline-report">${esc(it.desc)}<br>出售可得 <b>${fmt(it.val)} 金币</b>${r?(' · '+r.icon+' '+r.name+' 核心材料'):''}</div>
+      <div class="modal-actions" style="justify-content:flex-start">
+        <button class="btn btn-primary" onclick="useTrophy('${id}');closeModal()">✨ 使用</button>
+        <button class="btn btn-danger" onclick="sellItem('${id}',1);closeModal()">出售 1</button>
+        <button class="btn btn-danger" onclick="sellItem('${id}',0);closeModal()">全部出售</button>
       </div>`);
   } else if(it.heal || it.buff || it.skillBuff){
     const cdesc = it.heal?('恢复 '+it.heal+' 生命')
@@ -2538,16 +2719,43 @@ function renderShop(body){
     <div class="fortune-box">
       <div class="f-head"><span class="f-icon">🙏</span> 财神供奉 <span class="tag">Lv.${flv}</span></div>
       <div class="f-bonus">${fortuneDesc(flv)}</div>
-      <div class="f-cost">${fMax?'已达满级，财神庇佑常伴':'下一级所需：'+fmt(fcost)+' 金币（每级 ×1.5 指数上升）'}</div>
+      <div class="f-cost">${fMax?'已达满级，财神庇佑常伴':'下一级所需：'+fmt(fcost)+' 金币（每级 ×1.6 指数上升）'}</div>
       <button class="btn ${fMax?'btn-ghost':'btn-primary'} btn-block" onclick="worshipFortune()" ${fMax?'disabled':''}>${fMax?'🙏 已满级':'🙏 供奉财神（+'+Math.round(fortuneBonus('gold')*100)+'% → +'+Math.round((flv+1)*5)+'% 金币）'}</button>
     </div>
     <div class="train-box">
       <div class="f-head">📚 技能速成训练</div>
-      <div class="f-bonus">花费金币直接提升所选技能 1 级，价格随等级指数上升（×1.4）</div>
+      <div class="f-bonus">花费金币直接提升所选技能 1 级，价格随等级指数上升（×1.5）</div>
       <div class="train-row">
         <select id="train-skill" class="train-select">${SKILLS.map(s=>`<option value="${s.id}">${s.icon} ${s.name}（${lvl(s.id)}级 · ${fmt(trainCost(s.id))} 金）</option>`).join('')}</select>
         <button class="btn btn-primary btn-sm" onclick="trainSelected()">训练 +1 级</button>
       </div>
+    </div>
+    <div class="offer-box">
+      <div class="f-head"><span class="f-icon">⛩️</span> 祭坛供奉 <span class="tag" style="color:#6d28d9;background:#e9defa">消耗物品</span></div>
+      <div class="f-bonus">上交大量物品换取持续 2 小时的强力增益，材料不足时无法供奉。</div>
+      <div class="offer-grid">${OFFERINGS.map(o=>{
+        const it=ITEMS[o.itemId], have=countItem(o.itemId), info=BUFF_INFO[o.buff];
+        const ok=have>=o.need;
+        return `<div class="offer-card">
+          <span class="e">${o.icon}</span>
+          <span class="nm">${o.name}<small>${it.icon} ${it.name} ×${fmt(o.need)}<br>${info.name} +${Math.round((o.mult-1)*100)}%</small></span>
+          <button class="btn ${ok?'btn-primary':'btn-ghost'} btn-sm" onclick="offerItem('${o.id}')">${ok?'供奉':'缺'}</button>
+        </div>`;
+      }).join('')}</div>
+    </div>
+    <div class="offer-box" style="background:linear-gradient(135deg,#fffbe8,#fdf3d0);border-color:#ecd9a0">
+      <div class="f-head"><span class="f-icon">⛩️</span> 永久神龛 <span class="tag" style="color:#b45309;background:#fde9c0">永久加成</span></div>
+      <div class="f-bonus">上交采矿/钓鱼的<b>低概率产物</b>换取<b>永久</b>全局加成，单次需求随供奉次数递增；0.001% 特有道具不可供奉。</div>
+      <div class="offer-grid">${PERMA_OFFERINGS.map(o=>{
+        const it=ITEMS[o.itemId], have=countItem(o.itemId), info=BUFF_INFO[o.buff];
+        const done=state.perma[o.id]||0, need=permNeed(o.id);
+        const ok=have>=need;
+        return `<div class="offer-card">
+          <span class="e">${it.icon}</span>
+          <span class="nm">${it.name}<small>${info.name} 永久 +${Math.round(o.inc*100)}%/次 · 已供奉 ${done} 次<br>下次需 ${fmt(need)} 个（拥有 ${fmt(have)}）</small></span>
+          <button class="btn ${ok?'btn-primary':'btn-ghost'} btn-sm" onclick="permOffer('${o.id}')">${ok?'供奉':'缺'+need}</button>
+        </div>`;
+      }).join('')}</div>
     </div>
     <div class="shop-note" style="margin-top:14px">🏪 用金币快速购买基础物资、强化石与<b>招财符</b>（售价为物品价值的 2 倍）。<b>工具需在对应技能中自行制造并逐阶升级</b>。</div>`;
   ['charm1','charm2','charm3'].forEach(id=>{
@@ -2715,6 +2923,9 @@ function renderRelics(body){
     const got=relicOwned(r.id);
     const s=SKILL_MAP[r.skillId];
     const btxt=r.bonus.map(relBonusText).join(' · ');
+    const trophy=r.trophy?TROPHY_MAP[r.trophy]:null;
+    const haveTrophy=trophy?countItem(r.trophy):0;
+    const trophyTag=(!got && trophy)?`<span class="relic-ob ${haveTrophy>0?'ok':''}">🔑 特有道具：${trophy.icon}${trophy.name} ${haveTrophy>0?'×'+haveTrophy:'（未获得）'} · 该技能行动 0.001% 掉落</span>`:'';
     html+=`<div class="relic-row ${got?'':'locked'}">
       <span class="e">${r.icon}</span>
       <div class="info">
@@ -2722,8 +2933,9 @@ function renderRelics(body){
         <small>${r.desc}</small>
         <span class="relic-bonus">${btxt}</span>
         ${got?'<span class="relic-got">✓ 已拥有</span>':obtainText(r)}
+        ${trophyTag}
       </div>
-      ${(!got && r.obtain.type==='craft')?`<button class="btn btn-primary btn-sm" onclick="craftRelic('${r.id}')">合成</button>`:''}
+      ${(!got && r.obtain.type==='craft')?`<button class="btn ${haveTrophy>0?'btn-primary':'btn-ghost'} btn-sm" onclick="craftRelic('${r.id}')">合成</button>`:''}
     </div>`;
   });
   body.innerHTML=html;
@@ -2739,6 +2951,7 @@ function tipItem(ev, id){
   else if(it.skillBuff) inner+=`<div class="tt-desc">${SKILL_MAP[it.skillId].name}加成 <span class="tt-stat">效率+${Math.round((it.speed-1)*100)}% 经验+${Math.round((it.xp-1)*100)}%</span>，持续 ${fmtTime(it.dur)}</div>`;
   else if(it.buff) inner+=`<div class="tt-desc">${BUFF_INFO[it.buff].desc} <span class="tt-stat">+${Math.round((it.mult-1)*100)}%</span>，持续 ${fmtTime(it.dur)}</div>`;
   else if(it.cat==='relic') inner+=`<div class="tt-desc">神器碎片，集齐后可合成毕业神器<br>售价 ${fmt(it.val)} 金币</div>`;
+  else if(it.cat==='trophy') inner+=`<div class="tt-desc">职业特有道具（0.001% 掉落）<br>${esc(it.desc)}<br>出售 <span class="tt-stat">${fmt(it.val)}</span> 金币 · 可制作神器</div>`;
   else inner+=`<div class="tt-desc">${it.cat==='resource'?'采集资源':it.cat==='material'?(it.name.includes('强化石')?'强化材料':'加工材料'):it.cat==='tool'?'工具':'消耗品'}<br>售价 ${fmt(it.val)} 金币</div>`;
   showTip(inner, ev);
 }

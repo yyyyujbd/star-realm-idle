@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星穹放置 · Star Realm Idle</title>
+<style>
+:root{
+  --bg:#eef2f7; --bg2:#e6ecf4;
+  --card:#ffffff; --border:#e3e9f2; --border2:#d3dde9;
+  --text:#1f2937; --muted:#6b7280; --muted2:#98a2b3;
+  --accent:#4f7cff; --accent2:#3b6bf0;
+  --green:#16a34a; --red:#dc2626; --gold:#d97706;
+  --radius:12px;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 16px rgba(16,24,40,.06);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font); color:var(--text);
+  background:radial-gradient(1200px 600px at 20% -10%,#ffffff 0%,var(--bg) 45%,var(--bg2) 100%);
+  font-size:14px; -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+button{font-family:var(--font);cursor:pointer;border:none;background:none;color:inherit}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#cdd6e2;border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:#b7c2d1;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ===== 布局 ===== */
+#app{display:flex;flex-direction:column;height:100vh}
+.topbar{
+  height:56px;flex:0 0 56px;display:flex;align-items:center;gap:10px;padding:0 16px;
+  background:var(--card);border-bottom:1px solid var(--border);box-shadow:0 1px 3px rgba(16,24,40,.04);
+  z-index:20; position:relative;
+}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:.5px;user-select:none}
+.logo .mark{font-size:24px}
+.logo .sub{font-size:10px;color:var(--muted2);font-weight:600;letter-spacing:.3px}
+.top-stats{display:flex;align-items:center;gap:6px;margin-left:14px;flex-wrap:nowrap}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;
+  background:#f4f7fb;border:1px solid var(--border);font-weight:700;font-size:13px;white-space:nowrap;
+}
+.chip .ic{font-size:15px}
+.chip small{font-weight:600;color:var(--muted);font-size:11px}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.icon-btn{
+  width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;
+  background:#f4f7fb;border:1px solid var(--border);transition:.15s;
+}
+.icon-btn:hover{background:#e9eff8;border-color:var(--border2)}
+
+.layout{flex:1;display:grid;grid-template-columns:236px 1fr 336px;min-height:0}
+
+/* ===== 侧边栏 ===== */
+.sidebar{background:var(--card);border-right:1px solid var(--border);overflow-y:auto;padding:12px 10px}
+.side-group{margin:14px 0 6px;padding:0 6px;font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:1.5px}
+.side-group:first-child{margin-top:2px}
+.skill-item{
+  display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;cursor:pointer;
+  position:relative;transition:background .12s;border:1px solid transparent;user-select:none;
+}
+.skill-item:hover{background:#f2f6fc}
+.skill-item.active{background:#eef3ff;border-color:#dbe6ff}
+.skill-item.active .skill-name{color:var(--accent2)}
+.skill-ic{
+  width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:20px;flex:0 0 38px;
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.08);
+}
+.skill-meta{flex:1;min-width:0;display:flex;flex-direction:column}
+.skill-name{font-weight:700;font-size:13px}
+.skill-lv{font-size:11px;color:var(--muted);font-weight:600}
+.skill-bar{position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:3px;background:#e6ecf4;overflow:hidden;margin:0 8px}
+.skill-bar>i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
+
+/* ===== 主内容区 ===== */
+.main{overflow-y:auto;padding:18px 20px 40px}
+.view-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.view-icon{width:58px;height:58px;border-radius:14px;display:grid;place-items:center;font-size:30px;flex:0 0 58px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08)}
+.view-title{flex:1;min-width:0}
+.view-title h1{font-size:20px;font-weight:800}
+.view-title .sub{color:var(--muted);font-size:12px;margin-top:2px}
+.xp-track{margin-top:8px;height:8px;border-radius:8px;background:#e9eef6;overflow:hidden;max-width:520px}
+.xp-track>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#7c9dff);border-radius:8px;transition:width .3s}
+.view-stats{display:flex;gap:8px;flex-wrap:wrap}
+
+.action-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:14px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;
+}
+.card.locked{opacity:.55;filter:grayscale(.4)}
+.card.active-card{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,124,255,.14),var(--shadow)}
+.card-top{display:flex;align-items:center;gap:10px}
+.card-ic{width:44px;height:44px;border-radius:11px;background:#f2f6fc;display:grid;place-items:center;font-size:24px;flex:0 0 44px}
+.card-name{font-weight:800;font-size:14px}
+.card-sub{font-size:11px;color:var(--muted);font-weight:600}
+.card-lv{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+.card-lv .req{color:var(--red)}
+.card-lv .ok{color:var(--green)}
+.kv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.kv b{color:var(--text);font-weight:700}
+.io-list{display:flex;flex-direction:column;gap:3px;font-size:12px}
+.io-row{display:flex;align-items:center;gap:6px}
+.io-row .qty{font-weight:700}
+.io-row .have{margin-left:auto;color:var(--muted2);font-size:11px}
+.io-row .lack{color:var(--red);font-weight:700}
+.tiny-ic{font-size:14px}
+.card-progress{position:absolute;left:0;bottom:0;height:4px;width:100%;background:#eef2f8}
+.card-progress>i{display:block;height:100%;background:var(--accent);width:0%;transition:width .15s linear}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border-radius:10px;
+  font-weight:700;font-size:13px;transition:.15s;border:1px solid transparent;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:#f4f7fb;border-color:var(--border);color:var(--text)}
+.btn-ghost:hover{background:#e9eff8}
+.btn-danger{background:#fff;border-color:#f3c8c8;color:var(--red)}
+.btn-danger:hover{background:#fdecec}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-sm{padding:6px 10px;font-size:12px;border-radius:8px}
+.btn-block{width:100%}
+
+/* 战斗 */
+.combat-layout{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+.arena{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:18px;display:flex;flex-direction:column;gap:14px;
+}
+.combatant{display:flex;align-items:center;gap:12px}
+.combatant .face{width:56px;height:56px;border-radius:13px;background:#f2f6fc;display:grid;place-items:center;font-size:30px;flex:0 0 56px}
+.combatant .who{flex:1;min-width:0}
+.combatant .nm{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
+.combatant .nm .tag{font-size:10px;font-weight:700;color:var(--muted);background:#f2f6fc;padding:2px 7px;border-radius:8px}
+.hpbar{height:12px;border-radius:8px;background:#eef2f8;overflow:hidden;margin-top:6px;position:relative}
+.hpbar>i{display:block;height:100%;border-radius:8px;transition:width .2s}
+.hpbar.player>i{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.hpbar.monster>i{background:linear-gradient(90deg,#ef4444,#f87171)}
+.hpbar .hp-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.vs{text-align:center;font-size:22px;font-weight:900;color:var(--muted2);line-height:0;margin:-4px 0}
+.style-pick{display:flex;gap:8px}
+.style-btn{
+  flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:#f7fafd;font-weight:700;font-size:13px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;transition:.13s;
+}
+.style-btn .e{font-size:18px}
+.style-btn.active{border-color:var(--accent);background:#eef3ff;color:var(--accent2)}
+.fight-log{background:#0f172a;color:#cbd5e1;border-radius:10px;padding:10px 12px;height:150px;overflow-y:auto;font-size:12px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.fight-log .me{color:#86efac}.fight-log .mo{color:#fca5a5}.fight-log .sys{color:#93c5fd}.fight-log .loot{color:#fcd34d}
+.monster-list{display:flex;flex-direction:column;gap:9px}
+.monster-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:11px 12px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:.13s;position:relative;overflow:hidden;
+}
+.monster-card:hover{border-color:#c9d8f0;background:#fbfdff}
+.monster-card.active{border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.12),var(--shadow)}
+.monster-card .face{width:42px;height:42px;border-radius:10px;background:#f2f6fc;display:grid;place-items:center;font-size:22px;flex:0 0 42px}
+.monster-card .info{flex:1;min-width:0}
+.monster-card .nm{font-weight:800;font-size:13px}
+.monster-card .st{font-size:11px;color:var(--muted)}
+.monster-card .lv{margin-left:auto;font-weight:800;font-size:12px;color:var(--muted);white-space:nowrap}
+.monster-card .lv .danger{color:var(--red)}
+
+/* ===== 右侧面板 ===== */
+.right{background:var(--card);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.right-tabs{display:flex;gap:4px;padding:10px 12px 0;border-bottom:1px solid var(--border)}
+.rtab{flex:1;padding:9px 4px;text-align:center;font-weight:700;font-size:13px;color:var(--muted);border-radius:9px 9px 0 0;border-bottom:2px solid transparent;transition:.13s}
+.rtab.active{color:var(--accent2);border-bottom-color:var(--accent)}
+.rtab:hover{color:var(--text)}
+.right-body{flex:1;overflow-y:auto;padding:14px}
+
+/* 角色 */
+.char-block{margin-bottom:16px}
+.char-block h3{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:1px;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.stat-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--border);font-size:13px}
+.stat-row b{font-weight:800}
+.stat-row .v{color:var(--accent2);font-weight:800}
+.equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.equip-slot{
+  aspect-ratio:1;border-radius:11px;border:2px dashed var(--border2);background:#fafbfd;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;transition:.13s;position:relative;
+}
+.equip-slot:hover{border-color:#c4d4ef}
+.equip-slot.filled{border-style:solid;border-color:var(--border);background:#fff;box-shadow:var(--shadow)}
+.equip-slot .e{font-size:22px}
+.equip-slot .slot-nm{font-size:9px;color:var(--muted2);font-weight:700}
+.equip-slot .lvl{font-size:9px;color:var(--accent2);font-weight:800}
+.buff-row{display:flex;align-items:center;gap:8px;padding:6px 9px;background:#f6f9fd;border-radius:9px;margin-bottom:6px;font-size:12px}
+.buff-row .tm{margin-left:auto;color:var(--muted);font-weight:700;font-size:11px}
+
+/* 背包 */
+.bank-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.bank-head .cnt{font-size:12px;color:var(--muted);font-weight:600}
+.bank-search{width:100%;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:#f7fafd;font-family:inherit;font-size:13px;margin-bottom:10px;outline:none}
+.bank-search:focus{border-color:var(--accent);background:#fff}
+.bank-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.bank-item{
+  border:1px solid var(--border);border-radius:10px;background:#fff;padding:8px 6px;cursor:pointer;position:relative;
+  display:flex;flex-direction:column;align-items:center;gap:4px;transition:.12s;box-shadow:0 1px 2px rgba(16,24,40,.03);
+}
+.bank-item:hover{border-color:#c9d8f0;background:#fbfdff}
+.bank-item .e{font-size:22px}
+.bank-item .n{font-size:10px;text-align:center;line-height:1.2;color:var(--muted);font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.bank-item .q{position:absolute;top:4px;right:6px;font-size:10px;font-weight:800;color:var(--accent2)}
+.bank-item .eq-tag{position:absolute;top:4px;left:6px;font-size:9px;font-weight:800;color:#fff;background:var(--gold);border-radius:6px;padding:1px 5px}
+.bank-empty{grid-column:1/-1;text-align:center;color:var(--muted2);padding:26px 0;font-size:13px}
+
+/* 商店 */
+.shop-note{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6}
+.shop-row{display:flex;align-items:center;gap:9px;padding:8px;border:1px solid var(--border);border-radius:10px;margin-bottom:7px;background:#fff}
+.shop-row .e{font-size:20px}
+.shop-row .nm{flex:1;font-size:12px;font-weight:700;min-width:0}
+.shop-row .pr{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}
+.shop-row .buy{flex:0 0 auto}
+
+/* ===== Tooltip / Toast / Modal ===== */
+#tooltip{
+  position:fixed;z-index:999;max-width:260px;background:#fff;border:1px solid var(--border);border-radius:11px;
+  box-shadow:0 8px 30px rgba(16,24,40,.18);padding:11px 13px;font-size:12px;pointer-events:none;display:none;line-height:1.55;
+}
+#tooltip .tt-title{font-weight:800;font-size:13px;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+#tooltip .tt-desc{color:var(--muted)}
+#tooltip .tt-stat{color:var(--accent2);font-weight:700}
+#toasts{position:fixed;right:16px;bottom:16px;z-index:1000;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.toast{
+  background:#1f2937;color:#fff;padding:10px 15px;border-radius:11px;font-size:13px;font-weight:600;
+  box-shadow:0 8px 24px rgba(16,24,40,.25);animation:toastIn .25s ease;max-width:320px;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#modal-wrap{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+#modal-wrap.show{display:flex}
+.modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(16,24,40,.3);width:440px;max-width:92vw;max-height:86vh;overflow-y:auto;padding:20px}
+.modal h2{font-size:17px;font-weight:800;margin-bottom:6px}
+.modal .m-sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+.offline-report{background:#f6f9fd;border-radius:11px;padding:12px;margin-bottom:12px;font-size:13px;line-height:1.8}
+.offline-report b{color:var(--accent2)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.empty-hint{color:var(--muted2);text-align:center;padding:30px 0;font-size:13px}
+.section-title{font-size:13px;font-weight:800;margin:14px 0 8px;display:flex;align-items:center;gap:6px}
+/* 里程碑 / 成就 / 任务 */
+.milestones{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-bottom:16px}
+.mile{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:#fafbfd;font-size:12px}
+.mile .lv{font-weight:800;color:var(--muted);font-size:11px;white-space:nowrap}
+.mile .d{flex:1;color:var(--muted)}
+.mile .ok{color:var(--green);font-weight:800}
+.mile.done{border-color:#bfe3c9;background:#f2fbf5}
+.mile.done .d{color:var(--text)}
+.mile.done .lv{color:var(--green)}
+.ach-row{display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--border);border-radius:11px;margin-bottom:7px;background:#fff}
+.ach-row .e{font-size:20px}
+.ach-row .info{flex:1;min-width:0;display:flex;flex-direction:column}
+.ach-row .info b{font-size:12.5px}
+.ach-row .info small{color:var(--muted);font-size:11px}
+.ach-row .reward{font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap}
+.ach-row .done-mark{color:var(--green);font-weight:900;font-size:15px}
+.ach-row.locked{opacity:.6}
+.task-card{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.03)}
+.task-card .t-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.task-card .t-icon{font-size:22px}
+.task-card .t-name{flex:1;font-weight:700;font-size:13px;line-height:1.3}
+.task-card .t-reward{font-size:11px;font-weight:800;color:var(--gold);white-space:nowrap}
+.task-bar{height:8px;border-radius:8px;background:#eef2f8;overflow:hidden}
+.task-bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#7c9dff);border-radius:8px;transition:width .2s}
+.task-card .t-prog{font-size:11px;color:var(--muted);margin-top:5px;display:flex;justify-content:space-between}
+.task-card.done{border-color:#bfe3c9;background:#f2fbf5}
+.task-card.done .t-reward{color:var(--green)}
+
+/* 云存档 */
+.cloud-note{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px}
+.cloud-status{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;background:#f2fbf5;border:1px solid #bfe3c9;margin-bottom:12px}
+.cloud-status.off{background:#f6f9fd;border-color:var(--border)}
+.cloud-status .e{font-size:21px}
+.cloud-status .info{flex:1;min-width:0;font-size:12px;line-height:1.5}
+.cloud-status .info b{font-size:13px}
+.cloud-status .info small{color:var(--muted);display:block}
+.cloud-field{margin-bottom:11px}
+.cloud-field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--muted)}
+.cloud-field input{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--border);font-family:inherit;font-size:12.5px;outline:none;background:#f7fafd;box-sizing:border-box}
+.cloud-field input:focus{border-color:var(--accent);background:#fff}
+.cloud-remember{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-bottom:12px;cursor:pointer}
+.cloud-actions{display:flex;flex-direction:column;gap:8px}
+.cloud-actions .btn{width:100%}
+.cloud-synced{font-size:11px;color:var(--muted);margin-top:10px;text-align:center}
+.cloud-help{font-size:11.5px;color:var(--muted2);line-height:1.8;margin-top:14px;background:#f6f9fd;border-radius:11px;padding:11px 13px}
+.cloud-help b{color:var(--muted)}
+.cloud-help code{background:#eef2f8;padding:1px 5px;border-radius:5px;font-size:10.5px}
+.cloud-spin{display:inline-block;width:12px;height:12px;border:2px solid #dbe4f0;border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="logo"><span class="mark">✨</span><div>星穹放置<small class="sub">STAR REALM IDLE</small></div></div>
+    <div class="top-stats">
+      <span class="chip"><span class="ic">💰</span><span id="top-gold">0</span></span>
+      <span class="chip"><span class="ic">⭐</span><small>总等级</small><span id="top-total">1</span></span>
+      <span class="chip"><span class="ic">⚔️</span><small>战斗</small><span id="top-combat">1</span></span>
+      <span class="chip"><span class="ic">🏆</span><small>成就</small><span id="top-ach">0/20</span></span>
+    </div>
+    <div class="top-right">
+      <button class="icon-btn" id="btn-save" title="保存">💾</button>
+      <button class="icon-btn" id="btn-reset" title="重置存档">🗑️</button>
+    </div>
+  </header>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main" id="main"></main>
+    <aside class="right">
+      <div class="right-tabs">
+        <button class="rtab active" data-tab="char">角色</button>
+        <button class="rtab" data-tab="bank">背包</button>
+        <button class="rtab" data-tab="shop">商店</button>
+        <button class="rtab" data-tab="ach">成就</button>
+        <button class="rtab" data-tab="tasks">任务</button>
+        <button class="rtab" data-tab="cloud">云存档</button>
+      </div>
+      <div class="right-body" id="right-body"></div>
+    </aside>
+  </div>
+</div>
+<div id="tooltip"></div>
+<div id="toasts"></div>
+<div id="modal-wrap"><div class="modal" id="modal"></div></div>
+
+<script>
+'use strict';
+/* ================= 工具 ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmt(n){ n=Math.floor(n); if(n>=1e8) return (n/1e8).toFixed(2)+'亿'; if(n>=1e4) return (n/1e4).toFixed(1)+'万'; return n.toLocaleString('zh-CN'); }
+function fmtTime(s){
+  s=Math.floor(s); if(s<60) return s+'秒';
+  const m=Math.floor(s/60), r=s%60; if(m<60) return m+'分'+(r?r+'秒':'');
+  const h=Math.floor(m/60), mm=m%60; return h+'小时'+(mm?mm+'分':'');
+}
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const rint=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+/* 安全存储：沙箱 iframe 等环境会禁用 localStorage，自动降级为内存模式 */
+const store=(()=>{
+  try{ const t='__sr_probe'; localStorage.setItem(t,'1'); localStorage.removeItem(t); return localStorage; }
+  catch(e){
+    const mem={};
+    return { getItem:k=>(k in mem)?mem[k]:null, setItem:(k,v)=>{mem[k]=String(v);}, removeItem:k=>{delete mem[k];} };
+  }
+})();
+const STORAGE_MEM = (()=>{ try{ localStorage.setItem('__sr_probe','1'); localStorage.removeItem('__sr_probe'); return false; }catch(e){ return true; } })();
+
+/* ================= 数据：技能 ================= */
+const SKILLS = [
+  {id:'milking',        name:'采晶',   icon:'💠', group:'采集', color:'#8b5cf6'},
+  {id:'foraging',       name:'采摘',   icon:'🌿', group:'采集', color:'#71cf8c'},
+  {id:'woodcutting',    name:'伐木',   icon:'🌲', group:'采集', color:'#b08968'},
+  {id:'mining',         name:'采矿',   icon:'⛏️', group:'采集', color:'#9aa3b2'},
+  {id:'fishing',        name:'钓鱼',   icon:'🎣', group:'采集', color:'#4fa8d8'},
+  {id:'cheesesmithing', name:'锻造',   icon:'⚒️', group:'生产', color:'#f2c14e'},
+  {id:'crafting',       name:'制作',   icon:'🔨', group:'生产', color:'#d98e4a'},
+  {id:'tailoring',      name:'裁缝',   icon:'🧵', group:'生产', color:'#e88fc7'},
+  {id:'cooking',        name:'烹饪',   icon:'🍳', group:'生产', color:'#e56b6b'},
+  {id:'brewing',        name:'冲泡',   icon:'🍵', group:'生产', color:'#7fb069'},
+  {id:'alchemy',        name:'炼金',   icon:'⚗️', group:'生产', color:'#9b7bd4'},
+  {id:'melee',          name:'近战',   icon:'⚔️', group:'战斗', color:'#d9534f'},
+  {id:'ranged',         name:'远程',   icon:'🏹', group:'战斗', color:'#5cb85c'},
+  {id:'magic',          name:'魔法',   icon:'🔮', group:'战斗', color:'#5b7bd4'},
+  {id:'defence',        name:'防御',   icon:'🛡️', group:'战斗', color:'#7c8aa5'},
+  {id:'hitpoints',      name:'生命',   icon:'❤️', group:'战斗', color:'#e04a8b'},
+];
+const SKILL_MAP = Object.fromEntries(SKILLS.map(s=>[s.id,s]));
+const COMBAT_SKILLS = ['melee','ranged','magic','defence','hitpoints'];
+const STYLES = [
+  {id:'melee', name:'近战', icon:'⚔️'},
+  {id:'ranged', name:'远程', icon:'🏹'},
+  {id:'magic', name:'魔法', icon:'🔮'},
+];
+
+/* ================= 数据：物品 ================= */
+const TIER = [
+  {lvl:1,  val:2,  wdmg:3,  hd:2,  bd:4,  ld:3,  ad:1,  hp:0},
+  {lvl:15, val:6,  wdmg:7,  hd:4,  bd:7,  ld:5,  ad:2,  hp:8},
+  {lvl:30, val:15, wdmg:13, hd:7,  bd:12, ld:9,  ad:4,  hp:18},
+  {lvl:50, val:35, wdmg:22, hd:11, bd:18, ld:14, ad:6,  hp:32},
+  {lvl:70, val:80, wdmg:34, hd:16, bd:26, ld:20, ad:9,  hp:50},
+];
+const RES_LINES = {
+  milk: {cat:'resource', names:['低级魔晶','精良魔晶','秘银魔晶','星辉魔晶','星核魔晶'], icons:['💎','💎','💎','💠','✨']},
+  fiber:{cat:'resource', names:['植物纤维','亚麻纤维','魔法纤维','精灵纤维','星尘纤维'], icons:['🌿','🌿','🧶','🧶','✨']},
+  herb: {cat:'resource', names:['野药草','月光草','火焰花','冰晶草','龙息草'], icons:['🌱','🌙','🌺','❄️','🐉']},
+  log:  {cat:'resource', names:['橡木','桦木','枫木','红木','灵木'], icons:['🪵','🪵','🍁','🪵','🌳']},
+  ore:  {cat:'resource', names:['铜矿','铁矿','银矿','金矿','秘银矿'], icons:['🟤','⚙️','🥈','🥇','💠']},
+  fish: {cat:'resource', names:['河鱼','鲈鱼','鲑鱼','金枪鱼','龙鱼'], icons:['🐟','🐟','🍣','🐟','🐉']},
+};
+const MAT_LINES = {
+  cheese:{cat:'material', names:['魔晶锭','精炼魔晶锭','秘银魔晶锭','星辉魔晶锭','星核魔晶锭'], icons:['🔷','🔷','🔷','🔷','🔶']},
+  plank: {cat:'material', names:['橡木板','桦木板','枫木板','红木板','灵木板'], icons:['🪵','🪵','🪵','🪵','🪵']},
+  cloth: {cat:'material', names:['粗布','亚麻布','魔法布','精灵布','星尘布'], icons:['🧵','🧵','🧵','🧵','🧵']},
+};
+const ITEMS = {};   // id -> {name,icon,cat,val}
+(function buildItems(){
+  for(const line in RES_LINES){
+    const L=RES_LINES[line];
+    L.names.forEach((nm,i)=>{ ITEMS[line+(i+1)] = {name:nm, icon:L.icons[i], cat:L.cat, val:TIER[i].val}; });
+  }
+  for(const line in MAT_LINES){
+    const L=MAT_LINES[line];
+    L.names.forEach((nm,i)=>{ ITEMS[line+(i+1)] = {name:nm, icon:L.icons[i], cat:L.cat, val:Math.round(TIER[i].val*2.2)}; });
+  }
+})();
+
+/* 消耗品（食物/茶/药水）——也纳入 ITEMS，含 heal/buff 字段 */
+const CONSUMABLE_DEFS = [];
+function addConsumable(id,name,icon,cat,opt){ ITEMS[id]={name,icon,cat,val:opt.val||10,...opt}; CONSUMABLE_DEFS.push({id,...ITEMS[id]}); }
+// 烹饪食物
+[['food1','烤河鱼','🐟',12],['food2','香煎鲈鱼','🐟',24],['food3','鲑鱼刺身','🍣',44],['food4','金枪鱼排','🐟',80],['food5','龙鱼盛宴','🐉',140]]
+  .forEach((f,i)=>{ addConsumable(f[0],f[1],f[2],'food',{val:Math.round(TIER[i].val*1.8), heal:f[3]}); });
+// 冲泡茶（生产/采集效率）
+[['tea1','提神茶','🍵',8],['tea2','浓香茶','🍵',13],['tea3','灵叶茶','🍵',20],['tea4','星辰茶','🍵',30],['tea5','银河茶','🍵',45]]
+  .forEach((f,i)=>{ addConsumable(f[0],f[1],f[2],'tea',{val:Math.round(TIER[i].val*2.4), buff:'speed', mult:1+0.08*(i+1), dur:12*60}); });
+addConsumable('coffee1','力量咖啡','☕','tea',{val:80, buff:'dmg', mult:1.2, dur:10*60});
+addConsumable('coffee2','迅捷咖啡','☕','tea',{val:110, buff:'atkspeed', mult:1.18, dur:10*60});
+addConsumable('coffee3','铁壁咖啡','☕','tea',{val:150, buff:'def', mult:1.15, dur:10*60});
+// 炼金药水
+addConsumable('pot1','治疗药水','🧪','potion',{val:12, heal:40});
+addConsumable('pot2','强效治疗药水','🧪','potion',{val:28, heal:100});
+addConsumable('pot3','圣愈药水','🧪','potion',{val:60, heal:220});
+addConsumable('pot4','力量药水','🧪','potion',{val:95, buff:'dmg', mult:1.25, dur:8*60});
+addConsumable('pot5','防御药水','🧪','potion',{val:120, buff:'def', mult:1.2, dur:8*60});
+
+/* ================= 数据：装备 ================= */
+const EQUIPMENT = {};   // id -> {name,icon,slot,style,lvl,stats:{damage,defence,hp},val}
+const EQ_NAMES = {
+  sword:{slot:'weapon',style:'melee', names:['木柄短剑','精铁长剑','白银阔剑','黄金巨剑','秘银大剑'], icons:['🗡️','🗡️','⚔️','⚔️','⚔️']},
+  bow:  {slot:'weapon',style:'ranged', names:['猎弓','硬木弓','复合弓','精灵长弓','星辰神弓'], icons:['🏹','🏹','🏹','🏹','🏹']},
+  staff:{slot:'weapon',style:'magic',  names:['学徒法杖','橡木法杖','水晶法杖','星火法杖','秘法权杖'], icons:['🪄','🪄','🪄','🪄','🪄']},
+  hh:{slot:'head',style:'melee', names:['铁头盔','钢头盔','白银头盔','黄金头盔','秘银头盔'], icons:['🪖','🪖','🪖','🪖','🪖']},
+  hb:{slot:'body',style:'melee', names:['铁胸甲','钢胸甲','白银胸甲','黄金胸甲','秘银胸甲'], icons:['🦺','🦺','🦺','🦺','🦺']},
+  hl:{slot:'legs',style:'melee', names:['铁腿甲','钢腿甲','白银腿甲','黄金腿甲','秘银腿甲'], icons:['🛡️','🛡️','🛡️','🛡️','🛡️']},
+  lh:{slot:'head',style:'light', names:['布帽','皮兜帽','法师帽','精灵冠','星尘冠'], icons:['👒','👒','🎩','👑','👑']},
+  lb:{slot:'body',style:'light', names:['布衣','皮甲','法师袍','精灵长袍','星尘法袍'], icons:['👕','👕','🥼','🥼','🥼']},
+  ll:{slot:'legs',style:'light', names:['布裤','皮裤','法师长裤','精灵护腿','星尘护腿'], icons:['👖','👖','👖','👖','👖']},
+  acc:{slot:'accessory',style:'any', names:['木符','铜戒','银戒','黄金项链','秘银宝戒'], icons:['📿','💍','💍','📿','💍']},
+  pouch:{slot:'pouch',style:'any', names:['小布袋','皮革袋','大口袋','魔法袋','星辰袋'], icons:['👝','👝','👝','👝','👝']},
+};
+(function buildEquipment(){
+  for(const key in EQ_NAMES){
+    const E=EQ_NAMES[key];
+    E.names.forEach((nm,i)=>{
+      const t=TIER[i];
+      let stats;
+      if(key==='sword'||key==='bow'||key==='staff') stats={damage:t.wdmg, defence:0, hp:0};
+      else if(key==='hh') stats={damage:0, defence:t.hd, hp:Math.round(t.hp*0.4)};
+      else if(key==='hb') stats={damage:0, defence:t.bd, hp:t.hp};
+      else if(key==='hl') stats={damage:0, defence:t.ld, hp:Math.round(t.hp*0.5)};
+      else if(key==='lh') stats={damage:0, defence:Math.max(1,t.hd-1), hp:Math.round(t.hp*0.3)};
+      else if(key==='lb') stats={damage:0, defence:Math.max(2,t.bd-2), hp:Math.round(t.hp*0.8)};
+      else if(key==='ll') stats={damage:0, defence:Math.max(1,t.ld-1), hp:Math.round(t.hp*0.4)};
+      else if(key==='acc') stats={damage:t.ad, defence:0, hp:Math.round(t.hp*0.5)};
+      else stats={damage:0, defence:1, hp:Math.round(t.hp*0.6)};
+      const id=key+(i+1);
+      EQUIPMENT[id]={name:nm, icon:E.icons[i], slot:E.slot, style:E.style, lvl:t.lvl, stats, val:Math.round(t.val*2.2*3)};
+    });
+  }
+})();
+
+/* ================= 数据：动作 ================= */
+const ACTIONS = {};
+function act(skillId, id, name, icon, lvl, time, xp, inMap, out){
+  (ACTIONS[skillId] || (ACTIONS[skillId]=[])).push({skillId,id,name,icon,lvl,time,xp,in:inMap||null,out:out||null});
+}
+// 采集
+function gatherActions(skillId, line, nameFn, iconFn){
+  for(let i=0;i<5;i++){
+    const t=TIER[i], id=line+(i+1);
+    const nm=nameFn?nameFn(id):ITEMS[id].name;
+    act(skillId, id, nm, ITEMS[id].icon, t.lvl, 2+i*0.5, 8*(i+1), null, [{id, qty:1}]);
+  }
+}
+gatherActions('milking','milk');
+gatherActions('foraging','fiber');
+gatherActions('woodcutting','log');
+gatherActions('mining','ore');
+gatherActions('fishing','fish');
+// 采摘额外产出草药
+ACTIONS.foraging.forEach(a=>{
+  const tier=parseInt(a.id.slice(-1));
+  a.out.push({id:'herb'+tier, qty:1, chance:0.35});
+});
+
+// 生产：炼制（原料→材料）
+function refineActions(skillId, fromLine, toLine){
+  for(let i=0;i<5;i++){
+    const t=TIER[i];
+    act(skillId, fromLine+(i+1)+'->'+toLine+(i+1), '炼制'+ITEMS[toLine+(i+1)].name, ITEMS[toLine+(i+1)].icon, t.lvl, 2.5+i*0.4, 10*(i+1), {[fromLine+(i+1)]:2}, [{id:toLine+(i+1), qty:1}]);
+  }
+}
+refineActions('cheesesmithing','milk','cheese');
+refineActions('crafting','log','plank');
+refineActions('tailoring','fiber','cloth');
+
+// 生产：锻造装备
+function craftEquipment(skillId, eqKey, mat1Line, mat2Line){
+  for(let i=0;i<5;i++){
+    const t=TIER[i], eqId=eqKey+(i+1);
+    const E=EQUIPMENT[eqId];
+    const inMap={[mat1Line+(i+1)]:2};
+    if(mat2Line) inMap[mat2Line+(i+1)]=1;
+    act(skillId, eqId, E.name, E.icon, t.lvl, 3.5+i*0.6, 16*(i+1), inMap, [{eq:eqId, qty:1}]);
+  }
+}
+// 锻造：近战武器 + 重甲
+craftEquipment('cheesesmithing','sword','cheese','ore');
+craftEquipment('cheesesmithing','hh','cheese','ore');
+craftEquipment('cheesesmithing','hb','cheese','ore');
+craftEquipment('cheesesmithing','hl','cheese','ore');
+// 制作：弓/法杖/饰品
+craftEquipment('crafting','bow','plank','ore');
+craftEquipment('crafting','staff','plank','ore');
+craftEquipment('crafting','acc','plank','ore');
+// 裁缝：轻甲 + 袋子
+craftEquipment('tailoring','lh','cloth','herb');
+craftEquipment('tailoring','lb','cloth','herb');
+craftEquipment('tailoring','ll','cloth','herb');
+craftEquipment('tailoring','pouch','cloth',null);
+
+// 烹饪：鱼 → 食物
+[['fish1','food1'],['fish2','food2'],['fish3','food3'],['fish4','food4'],['fish5','food5']].forEach((p,i)=>{
+  act('cooking', 'cook'+p[1], ITEMS[p[1]].name, ITEMS[p[1]].icon, TIER[i].lvl, 2.5+i*0.4, 11*(i+1), {[p[0]]:2}, [{id:p[1], qty:1}]);
+});
+// 冲泡：药草+魔晶 → 茶/咖啡
+[['herb1','milk1','tea1'],['herb2','milk2','tea2'],['herb3','milk3','tea3'],['herb4','milk4','tea4'],['herb5','milk5','tea5']].forEach((p,i)=>{
+  act('brewing','brew'+p[2], ITEMS[p[2]].name, ITEMS[p[2]].icon, TIER[i].lvl, 3+i*0.4, 13*(i+1), {[p[0]]:1,[p[1]]:1}, [{id:p[2], qty:1}]);
+});
+act('brewing','brewcoffee1', ITEMS.coffee1.name, '☕', 30, 5, 40, {herb3:1,milk3:1}, [{id:'coffee1', qty:1}]);
+act('brewing','brewcoffee2', ITEMS.coffee2.name, '☕', 50, 6, 70, {herb4:1,milk4:1}, [{id:'coffee2', qty:1}]);
+act('brewing','brewcoffee3', ITEMS.coffee3.name, '☕', 70, 7, 110, {herb5:1,milk5:1}, [{id:'coffee3', qty:1}]);
+// 炼金：药草 → 药水
+act('alchemy','alchpot1', ITEMS.pot1.name, '🧪', 1, 3, 9, {herb1:1}, [{id:'pot1', qty:1}]);
+act('alchemy','alchpot2', ITEMS.pot2.name, '🧪', 15, 3.5, 18, {herb2:1}, [{id:'pot2', qty:1}]);
+act('alchemy','alchpot3', ITEMS.pot3.name, '🧪', 30, 4, 34, {herb3:1}, [{id:'pot3', qty:1}]);
+act('alchemy','alchpot4', ITEMS.pot4.name, '🧪', 50, 5, 55, {herb4:1}, [{id:'pot4', qty:1}]);
+act('alchemy','alchpot5', ITEMS.pot5.name, '🧪', 70, 6, 90, {herb5:1}, [{id:'pot5', qty:1}]);
+
+/* ================= 数据：怪物 ================= */
+const MONSTERS = [
+  {id:'slime', name:'草原史莱姆', icon:'🟢', lvl:1,  hp:12,   maxHit:3,  def:0,  gold:6,   xp:10,  interval:2.6, drops:[{id:'fiber1',chance:.3,qty:[1,2]},{id:'herb1',chance:.25,qty:[1,1]}]},
+  {id:'wolf', name:'野狼', icon:'🐺', lvl:5,  hp:28,   maxHit:6,  def:2,  gold:14,  xp:18,  interval:2.6, drops:[{id:'fiber2',chance:.3,qty:[1,2]},{id:'herb2',chance:.2,qty:[1,1]},{id:'hh1',chance:.03,qty:[1,1]}]},
+  {id:'cowbandit', name:'岩石巨魔', icon:'🗿', lvl:12, hp:70,   maxHit:11, def:5,  gold:30,  xp:30,  interval:2.5, drops:[{id:'milk2',chance:.3,qty:[1,2]},{id:'herb2',chance:.25,qty:[1,2]},{id:'sword1',chance:.03,qty:[1,1]}]},
+  {id:'goblin', name:'太空哥布林', icon:'👾', lvl:20, hp:140,  maxHit:17, def:9,  gold:55,  xp:48,  interval:2.5, drops:[{id:'ore2',chance:.3,qty:[1,2]},{id:'log2',chance:.3,qty:[1,2]},{id:'bow1',chance:.03,qty:[1,1]}]},
+  {id:'golem', name:'陨石傀儡', icon:'🪨', lvl:30, hp:260,  maxHit:26, def:15, gold:95,  xp:72,  interval:2.4, drops:[{id:'ore3',chance:.35,qty:[1,2]},{id:'ore3',chance:.3,qty:[2,3]},{id:'hb2',chance:.03,qty:[1,1]}]},
+  {id:'pirate', name:'星际海盗', icon:'🏴‍☠️', lvl:42, hp:420, maxHit:36, def:22, gold:160, xp:105, interval:2.4, drops:[{id:'fish4',chance:.3,qty:[1,2]},{id:'milk4',chance:.3,qty:[1,2]},{id:'staff2',chance:.03,qty:[1,1]}]},
+  {id:'shadowcow', name:'暗影巨兽', icon:'🐲', lvl:55, hp:650, maxHit:48, def:30, gold:260, xp:145, interval:2.3, drops:[{id:'herb5',chance:.3,qty:[1,2]},{id:'log4',chance:.3,qty:[2,3]},{id:'lb3',chance:.03,qty:[1,1]}]},
+  {id:'dragon', name:'银河巨龙', icon:'🐉', lvl:70, hp:980, maxHit:63, def:40, gold:430, xp:200, interval:2.3, drops:[{id:'ore5',chance:.4,qty:[1,2]},{id:'milk5',chance:.3,qty:[1,2]},{id:'sword4',chance:.03,qty:[1,1]}]},
+  {id:'starcore', name:'星核领主', icon:'🪐', lvl:85, hp:1450, maxHit:82, def:52, gold:700, xp:270, interval:2.2, drops:[{id:'ore5',chance:.45,qty:[2,3]},{id:'herb5',chance:.35,qty:[2,3]},{id:'acc4',chance:.03,qty:[1,1]}]},
+  {id:'cosmiceye', name:'宇宙之眼', icon:'👁️', lvl:99, hp:2200, maxHit:105, def:65, gold:1150, xp:360, interval:2.2, drops:[{id:'fish5',chance:.5,qty:[1,3]},{id:'milk5',chance:.4,qty:[2,3]},{id:'sword5',chance:.02,qty:[1,1]},{id:'acc5',chance:.02,qty:[1,1]}]},
+];
+const MONSTER_MAP = Object.fromEntries(MONSTERS.map(m=>[m.id,m]));
+
+/* ================= 经验系统 ================= */
+function xpForLevel(level){ return Math.floor(50*Math.pow(level,1.5)); }
+const LEVEL_XP = (()=>{ const arr=[0]; let c=0; for(let l=1;l<=120;l++){ c+=xpForLevel(l); arr.push(c); } return arr; })();
+function levelFromXp(xp){ let l=1; while(l<LEVEL_XP.length && xp>=LEVEL_XP[l]) l++; return Math.min(l,120); }
+function xpIntoLevel(xp){ const l=levelFromXp(xp); return {level:l, into:xp-(LEVEL_XP[l-1]||0), need:(LEVEL_XP[l]||0)-(LEVEL_XP[l-1]||0)}; }
+
+/* ================= 技能里程碑（职业等级特殊效果加成） ================= */
+/* 每技能在 10/25/50/99 级解锁被动加成。
+   speed 类只加速该技能自身；xp/gold/dmg/def/hp/acc 类全局生效并叠加。 */
+const MILESTONES = [];
+function ms(skillId, level, type, value, desc){ MILESTONES.push({skillId, level, type, value, desc}); }
+// 采集系
+['milking','foraging','woodcutting','mining','fishing'].forEach(id=>{
+  const nm=SKILL_MAP[id].name;
+  ms(id,10,'speed',.10,nm+'速度 +10%');
+  ms(id,25,'xp',.03,'全局经验 +3%');
+  ms(id,50,'speed',.15,nm+'速度 +15%');
+  ms(id,99,'gold',.08,'全局金币 +8%');
+});
+// 生产系
+['cheesesmithing','crafting','tailoring','cooking','brewing','alchemy'].forEach(id=>{
+  const nm=SKILL_MAP[id].name;
+  ms(id,10,'speed',.10,nm+'速度 +10%');
+  ms(id,25,'xp',.03,'全局经验 +3%');
+  ms(id,50,'speed',.15,nm+'速度 +15%');
+  ms(id,99,'gold',.08,'全局金币 +8%');
+});
+// 战斗系
+['melee','ranged','magic'].forEach(id=>{
+  ms(id,10,'dmg',.05,'全局战斗伤害 +5%');
+  ms(id,25,'acc',.02,'命中率 +2%');
+  ms(id,50,'dmg',.08,'全局战斗伤害 +8%');
+  ms(id,99,'dmg',.10,'全局战斗伤害 +10%');
+});
+ms('defence',10,'def',.04,'受到伤害 -4%');
+ms('defence',25,'hp',.05,'生命上限 +5%');
+ms('defence',50,'def',.06,'受到伤害 -6%');
+ms('defence',99,'def',.10,'受到伤害 -10%');
+ms('hitpoints',10,'hp',.05,'生命上限 +5%');
+ms('hitpoints',25,'hp',.05,'生命上限 +5%');
+ms('hitpoints',50,'hp',.08,'生命上限 +8%');
+ms('hitpoints',99,'hp',.12,'生命上限 +12%');
+
+function milestonesOf(skillId){ return MILESTONES.filter(m=>m.skillId===skillId); }
+function passiveSpeed(skillId){
+  let m=1;
+  MILESTONES.forEach(ms=>{ if(ms.skillId===skillId && ms.type==='speed' && lvl(skillId)>=ms.level) m+=ms.value; });
+  return m;
+}
+function passiveGlobal(type){
+  let v=0;
+  MILESTONES.forEach(ms=>{ if(ms.type===type && lvl(ms.skillId)>=ms.level) v+=ms.value; });
+  return v;
+}
+
+/* ================= 状态 ================= */
+const SAVE_KEY='milky_cow_idle_v1';
+function defaultState(){
+  const skills={};
+  SKILLS.forEach(s=>skills[s.id]={xp:0, level:1});
+  return {
+    gold:0, skills, bank:{}, equipment:{}, totalKills:0,
+    activeSkill:'milking', action:null,
+    combat:{active:false, style:'melee', monsterId:'slime', monsterHp:12, playerHp:20, atkTimer:0, monTimer:0, autoEat:null, threshold:50},
+    buffs:{}, log:[], lastSave:Date.now(), rightTab:'char',
+    achievements:{}, tasks:[], stats:{gather:0, craft:0},
+  };
+}
+let state = loadState();
+
+function mergeState(s){
+  const d=defaultState();
+  const out={...d, ...s};
+  out.skills={...d.skills, ...(s.skills||{})};
+  out.bank=s.bank||{}; out.equipment=s.equipment||{}; out.buffs=s.buffs||{}; out.log=s.log||[];
+  out.combat={...d.combat, ...(s.combat||{})};
+  out.action=s.action||null;
+  out.achievements=s.achievements||{};
+  out.tasks=(Array.isArray(s.tasks)&&s.tasks.length)?s.tasks:[];
+  out.stats=s.stats||{gather:0, craft:0};
+  return out;
+}
+function loadState(){
+  try{
+    const raw=store.getItem(SAVE_KEY);
+    if(!raw) return defaultState();
+    return mergeState(JSON.parse(raw));
+  }catch(e){ return defaultState(); }
+}
+function saveState(){
+  state.lastSave=Date.now();
+  store.setItem(SAVE_KEY, JSON.stringify(state));
+  renderTopbar();
+}
+
+/* ================= 云存档 (GitHub Gist) ================= */
+const CLOUD_KEY='star_realm_cloud_v1';
+const GIST_DESC='STAR_REALM_IDLE_SAVE';
+const GIST_FILE='star-realm-idle-save.json';
+let sessionToken=null;
+function cloudGetConfig(){
+  try{ return JSON.parse(store.getItem(CLOUD_KEY)||'{}'); }catch(e){ return {}; }
+}
+function cloudSetConfig(cfg){ store.setItem(CLOUD_KEY, JSON.stringify(cfg)); }
+function cloudGetToken(){ return sessionToken || cloudGetConfig().token || null; }
+async function gh(path, token, opts={}){
+  const res=await fetch('https://api.github.com'+path, {
+    method: opts.method||'GET',
+    headers: {
+      'Accept':'application/vnd.github+json',
+      'Authorization':'Bearer '+token,
+      'X-GitHub-Api-Version':'2022-11-28',
+      ...(opts.body?{'Content-Type':'application/json'}:{}),
+    },
+    body: opts.body?JSON.stringify(opts.body):undefined,
+  });
+  if(!res.ok){
+    let msg=res.status+' '+res.statusText;
+    try{ const j=await res.json(); if(j.message) msg=j.message; }catch(e){}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+async function cloudFindGist(token){
+  const gists=await gh('/gists?per_page=100', token);
+  return gists.find(g=>g.description===GIST_DESC);
+}
+function cloudSaveToken(){
+  const token=$('#cloud-token').value.trim();
+  const remember=$('#cloud-remember').checked;
+  if(!token){ toast('请先粘贴 Token'); return; }
+  if(token.length<20){ toast('Token 太短，可能复制不完整'); return; }
+  toast('正在验证 Token…');
+  gh('/gists?per_page=1', token).then(()=>{
+    if(remember){ cloudSetConfig({token, gistId:null, lastSync:null}); sessionToken=null; }
+    else { cloudSetConfig({token:null, gistId:null, lastSync:null}); sessionToken=token; }
+    toast('连接成功 ✅');
+    renderRight();
+  }).catch(e=>toast('连接失败：'+e.message));
+}
+async function cloudUpload(){
+  const token=cloudGetToken();
+  if(!token){ toast('请先连接 GitHub'); return; }
+  saveState();
+  const content=JSON.stringify(state);
+  try{
+    const g=await cloudFindGist(token);
+    if(g){
+      await gh('/gists/'+g.id, token, {method:'PATCH', body:{files:{[GIST_FILE]:{content}}}});
+    } else {
+      await gh('/gists', token, {method:'POST', body:{description:GIST_DESC, public:false, files:{[GIST_FILE]:{content}}}});
+    }
+    const cfg=cloudGetConfig(); cfg.lastSync=Date.now(); cloudSetConfig(cfg);
+    toast('已上传到云端 ☁️');
+    renderRight();
+  }catch(e){ toast('上传失败：'+e.message); }
+}
+async function cloudDownload(){
+  const token=cloudGetToken();
+  if(!token){ toast('请先连接 GitHub'); return; }
+  try{
+    const g=await cloudFindGist(token);
+    if(!g){ toast('云端还没有存档，先上传一次'); return; }
+    const full=await gh('/gists/'+g.id, token);
+    const file=full.files && full.files[GIST_FILE];
+    if(!file || !file.content){ toast('云端存档为空或损坏'); return; }
+    const data=JSON.parse(file.content);
+    if(typeof data.gold!=='number' || !data.skills){ toast('云端存档格式无效'); return; }
+    state=mergeState(data);
+    saveState();
+    const cfg=cloudGetConfig(); cfg.gistId=g.id; cfg.lastSync=Date.now(); cloudSetConfig(cfg);
+    toast('已从云端下载存档 ⬇️');
+    renderAll();
+  }catch(e){ toast('下载失败：'+e.message); }
+}
+function cloudLogout(){
+  showModal('断开云存档', `<div class="m-sub">确定断开 GitHub 连接吗？本机存档与云端存档都不会被删除。</div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn btn-danger" onclick="doCloudLogout()">确认断开</button></div>`);
+}
+function doCloudLogout(){
+  store.removeItem(CLOUD_KEY);
+  sessionToken=null;
+  closeModal(); renderRight(); toast('已断开连接');
+}
+
+/* ================= 等级/经验 ================= */
+function lvl(skillId){ return state.skills[skillId].level; }
+function addGold(n){
+  const v=Math.floor(n*(1+passiveGlobal('gold')));
+  state.gold+=v; return v;
+}
+function addXp(skillId, amount, silent){
+  const s=state.skills[skillId];
+  const before=s.level;
+  s.xp+=amount*(1+passiveGlobal('xp'));
+  const after=levelFromXp(s.xp);
+  if(after>before){
+    s.level=after;
+    if(!silent){ toast('🎉 '+SKILL_MAP[skillId].name+' 升到 '+after+' 级！'); checkAchievements(); updateTasks('level',{skillId}); }
+  }
+}
+
+/* ================= 银行/物品 ================= */
+function addItem(id, qty){ if(qty<=0) return; state.bank[id]=(state.bank[id]||0)+qty; }
+function removeItem(id, qty){ const cur=state.bank[id]||0; state.bank[id]=Math.max(0,cur-qty); if(state.bank[id]===0) delete state.bank[id]; }
+function countItem(id){ return state.bank[id]||0; }
+function hasItems(map){ for(const k in map) if((state.bank[k]||0)<map[k]) return false; return true; }
+
+/* ================= 装备 ================= */
+function getEquipped(slot){ const id=state.equipment[slot]; return id?EQUIPMENT[id]:null; }
+function equipItem(eqId){
+  const E=EQUIPMENT[eqId];
+  if(lvl('melee')<E.lvl && lvl('ranged')<E.lvl && lvl('magic')<E.lvl && lvl('defence')<E.lvl){ toast('等级不足，无法装备'); return; }
+  const prev=state.equipment[E.slot];
+  removeItem(eqId,1);
+  if(prev){ addItem(prev,1); }
+  state.equipment[E.slot]=eqId;
+  toast('已装备 '+E.name);
+  checkAchievements();
+  saveState(); renderAll();
+}
+function unequip(slot){
+  const id=state.equipment[slot]; if(!id) return;
+  addItem(id,1); delete state.equipment[slot];
+  toast('已卸下 '+EQUIPMENT[id].name);
+  saveState(); renderAll();
+}
+
+/* ================= Buff ================= */
+const BUFF_INFO = {
+  speed:   {name:'效率提升', icon:'⚡', desc:'采集与生产速度提升'},
+  dmg:     {name:'伤害提升', icon:'💥', desc:'战斗伤害提升'},
+  atkspeed:{name:'攻速提升', icon:'⚡', desc:'攻击速度提升'},
+  def:     {name:'减伤提升', icon:'🛡️', desc:'受到的伤害降低'},
+};
+function applyBuff(buff, mult, dur){
+  const now=Date.now();
+  const cur=state.buffs[buff];
+  const baseUntil = cur && cur.until>now ? cur.until : now;
+  state.buffs[buff]={until:baseUntil+dur*1000, mult:Math.max(cur?cur.mult:1, mult)};
+}
+function buffMult(buff){ const b=state.buffs[buff]; return (b && b.until>Date.now())?b.mult:1; }
+function cleanupBuffs(){ const now=Date.now(); for(const k in state.buffs) if(state.buffs[k].until<=now) delete state.buffs[k]; }
+function useConsumable(itemId){
+  const it=ITEMS[itemId]; if(!it || countItem(itemId)<=0) return;
+  if(it.heal){
+    const hp=state.combat.playerHp, max=playerStats().maxHP;
+    if(hp>=max){ toast('生命值已满'); return; }
+    removeItem(itemId,1);
+    state.combat.playerHp=Math.min(max, hp+it.heal);
+    pushLog('你使用了 '+it.name+'，恢复 '+it.heal+' 生命','sys');
+    toast('❤️ +'+it.heal);
+  } else if(it.buff){
+    removeItem(itemId,1);
+    applyBuff(it.buff, it.mult, it.dur);
+    toast('✨ '+BUFF_INFO[it.buff].name+' 已激活');
+    pushLog('你使用了 '+it.name+'（'+BUFF_INFO[it.buff].name+'）','sys');
+  }
+  saveState(); renderAll();
+}
+
+/* ================= 动作系统 ================= */
+function getAction(skillId, actionId){ return (ACTIONS[skillId]||[]).find(a=>a.id===actionId); }
+function startAction(skillId, actionId){
+  const a=getAction(skillId, actionId);
+  if(!a) return;
+  if(lvl(skillId)<a.lvl){ toast('需要 '+SKILL_MAP[skillId].name+' '+a.lvl+' 级'); return; }
+  if(a.in && !hasItems(a.in)){ toast('材料不足'); return; }
+  state.activeSkill=skillId;
+  state.combat.active=false;
+  state.action={skillId, actionId, progress:0};
+  pushLog('开始：'+a.name,'sys');
+  saveState(); renderAll();
+}
+function stopAction(){
+  if(state.action){ pushLog('停止：'+getAction(state.action.skillId,state.action.actionId).name,'sys'); state.action=null; saveState(); renderAll(); }
+}
+function completeAction(silent, report){
+  const a=getAction(state.action.skillId, state.action.actionId);
+  if(!a) return false;
+  if(a.in && !hasItems(a.in)){ if(!silent){ toast('材料不足，已停止'); pushLog('材料不足，自动停止','sys');} state.action=null; return false; }
+  if(a.in) for(const k in a.in) removeItem(k, a.in[k]);
+  if(a.out){
+    for(const o of a.out){
+      if(o.eq){ addItem(o.eq, o.qty||1); if(!silent) pushLog('制作完成：'+EQUIPMENT[o.eq].name,'loot'); }
+      else{
+        let produced=false;
+        if(o.chance===undefined || Math.random()<=o.chance){ addItem(o.id, o.qty||1); produced=true; }
+        if(produced){
+          if(report) report.itemGain(o.id, o.qty||1);
+          if(!silent) updateTasks('collect', {itemId:o.id, qty:o.qty||1});
+        }
+      }
+    }
+  }
+  addXp(state.action.skillId, a.xp, silent);
+  if(report) report.xpGain(state.action.skillId, a.xp);
+  if(!silent){
+    const grp=SKILL_MAP[state.action.skillId].group;
+    if(grp==='采集') state.stats.gather++; else if(grp==='生产') state.stats.craft++;
+    checkAchievements(); updateTasks('gold',{});
+  }
+  return true;
+}
+
+/* ================= 战斗 ================= */
+function playerStats(){
+  const style=state.combat.style;
+  const slv=lvl(style);
+  const dlv=lvl('defence');
+  const hlv=lvl('hitpoints');
+  let wdmg=0, def=0, hp=0, accDmg=0;
+  const wpn=getEquipped('weapon');
+  if(wpn){ wdmg += (wpn.style===style)? wpn.stats.damage : Math.floor(wpn.stats.damage*0.25); }
+  for(const slot of ['head','body','legs']){
+    const e=getEquipped(slot); if(e){ def+=e.stats.defence; hp+=e.stats.hp; }
+  }
+  const acc=getEquipped('accessory'); if(acc){ accDmg+=acc.stats.damage; hp+=acc.stats.hp; }
+  const pouch=getEquipped('pouch'); if(pouch){ hp+=pouch.stats.hp; }
+  const maxHit=Math.floor((4+slv*1.4+wdmg+accDmg)*buffMult('dmg')*(1+passiveGlobal('dmg')));
+  const accuracy=Math.min(0.97, 0.75+slv*0.003+passiveGlobal('acc'));
+  const reduction=dlv*0.35+def*0.5;
+  const maxHP=Math.floor((20+hlv*4+hp)*(1+passiveGlobal('hp')));
+  const baseInterval = style==='melee'?2.4 : style==='ranged'?2.6 : 2.8;
+  const atkInterval=baseInterval/buffMult('atkspeed');
+  return {maxHit, accuracy, reduction, maxHP, atkInterval, styleLevel:slv};
+}
+function setStyle(style){ state.combat.style=style; renderAll(); }
+function startCombat(monsterId){
+  const m=MONSTER_MAP[monsterId];
+  state.action=null;
+  state.activeSkill=state.combat.style; // 切到战斗风格对应技能视图
+  state.combat.active=true;
+  state.combat.monsterId=monsterId;
+  state.combat.monsterHp=m.hp;
+  state.combat.atkTimer=0; state.combat.monTimer=0;
+  const ps=playerStats();
+  if(state.combat.playerHp<=0) state.combat.playerHp=ps.maxHP;
+  pushLog('遭遇 '+m.name+'！','sys');
+  saveState(); renderAll();
+}
+function stopCombat(){ state.combat.active=false; pushLog('脱离战斗','sys'); saveState(); renderAll(); }
+function pushLog(text, cls){ state.log.unshift({text, cls, t:Date.now()}); if(state.log.length>60) state.log.length=60; }
+function autoEatIfNeeded(){
+  const food=state.combat.autoEat;
+  if(!food) return;
+  const it=ITEMS[food]; if(!it || !it.heal) return;
+  const ps=playerStats();
+  const pct=state.combat.playerHp/ps.maxHP*100;
+  if(pct<=state.combat.threshold && countItem(food)>0){
+    removeItem(food,1);
+    state.combat.playerHp=Math.min(ps.maxHP, state.combat.playerHp+it.heal);
+    pushLog('自动进食 '+it.name+' +'+it.heal,'sys');
+  }
+}
+function playerAttack(){
+  const m=MONSTER_MAP[state.combat.monsterId];
+  const ps=playerStats();
+  if(Math.random()<ps.accuracy){
+    const dmg=Math.max(1, Math.floor(rnd(0.5,1)*ps.maxHit));
+    state.combat.monsterHp-=dmg;
+    pushLog('你对 '+m.name+' 造成 '+dmg+' 点伤害','me');
+    if(state.combat.monsterHp<=0) onMonsterDefeated();
+  } else pushLog('你的攻击未命中','sys');
+}
+function monsterAttack(){
+  const m=MONSTER_MAP[state.combat.monsterId];
+  const ps=playerStats();
+  const raw=Math.max(1, Math.floor((m.maxHit-ps.reduction)*rnd(0.85,1.05)));
+  const dmg=Math.max(1, Math.floor(raw/buffMult('def')*(1-passiveGlobal('def'))));
+  state.combat.playerHp-=dmg;
+  addXp('hitpoints', Math.max(1,Math.floor(dmg*0.3)), true);
+  addXp('defence', Math.max(1,Math.floor(dmg*0.15)), true);
+  pushLog(m.name+' 对你造成 '+dmg+' 点伤害','mo');
+  autoEatIfNeeded();
+  if(state.combat.playerHp<=0) onPlayerDefeated();
+}
+function onMonsterDefeated(){
+  const m=MONSTER_MAP[state.combat.monsterId];
+  state.totalKills++;
+  const style=state.combat.style;
+  addXp(style, m.xp, true);
+  addXp('defence', Math.floor(m.xp*0.7), true);
+  addXp('hitpoints', Math.floor(m.xp*0.5), true);
+  addGold(m.gold);
+  pushLog('击败 '+m.name+'！+'+m.gold+' 金币','loot');
+  // 掉落
+  for(const d of m.drops){
+    if(Math.random()<d.chance){
+      const q=rint(d.qty[0], d.qty[1]);
+      addItem(d.id, q);
+      pushLog('掉落：'+ITEMS[d.id].name+' ×'+q,'loot');
+    }
+  }
+  // 重生同种怪
+  state.combat.monsterHp=m.hp;
+  state.combat.atkTimer=0;
+  autoEatIfNeeded();
+  updateTasks('kill', {monsterId:m.id});
+  updateTasks('gold', {});
+  checkAchievements();
+}
+function onPlayerDefeated(){
+  state.combat.active=false;
+  state.combat.playerHp=playerStats().maxHP;
+  pushLog('你倒下了……已在营地复活','sys');
+  toast('💀 你被击败了，已复活');
+}
+function combatTick(dt){
+  if(!state.combat.active) return;
+  const m=MONSTER_MAP[state.combat.monsterId];
+  if(!m) return;
+  state.combat.atkTimer-=dt;
+  state.combat.monTimer-=dt;
+  if(state.combat.atkTimer<=0){ playerAttack(); state.combat.atkTimer+=playerStats().atkInterval; }
+  if(state.combat.active && state.combat.monTimer<=0){ monsterAttack(); state.combat.monTimer+=m.interval; }
+}
+
+/* ================= 离线收益 ================= */
+function simulateOffline(){
+  const now=Date.now();
+  const dt=now-state.lastSave;
+  if(dt<30*1000) return null;
+  state.lastSave=now;
+  let seconds=dt/1000;
+  const report={seconds, items:{}, xp:{}, gold:0, kills:0};
+  // 技能动作离线
+  if(state.action){
+    const a=getAction(state.action.skillId, state.action.actionId);
+    if(a){
+      const speedMult=buffMult('speed')*passiveSpeed(state.action.skillId);
+      const cost=a.time/speedMult;
+      let remaining=Math.min(seconds, 12*3600);
+      let guard=0;
+      while(remaining>=cost && guard<200000){
+        if(a.in && !hasItems(a.in)) break;
+        remaining-=cost;
+        completeAction(true, {
+          itemGain:(id,q)=>{ report.items[id]=(report.items[id]||0)+q; },
+          xpGain:(sid,x)=>{ report.xp[sid]=(report.xp[sid]||0)+x; },
+        });
+        guard++;
+      }
+      state.action.progress=0;
+      if(remaining>0) state.action.progress=remaining/cost; // 保留小数进度
+      else if(state.action && a.in && !hasItems(a.in)) state.action=null;
+    }
+  }
+  // 战斗离线（上限2小时，粗略模拟）
+  if(state.combat.active){
+    const m=MONSTER_MAP[state.combat.monsterId];
+    if(m){
+      const ps=playerStats();
+      const cs=Math.min(seconds, 2*3600);
+      const pdmg=Math.max(1, ps.maxHit*0.75*ps.accuracy);
+      const hitsToKill=Math.max(1, m.hp/pdmg);
+      const killTime=hitsToKill*ps.atkInterval;
+      const mdmg=Math.max(1,(m.maxHit-ps.reduction)*0.95);
+      const surv=(ps.maxHP*1.5)/Math.max(0.001, mdmg/m.interval);
+      let kills=Math.floor(cs/killTime);
+      kills=Math.min(kills, Math.floor(surv/killTime), 20000);
+      if(kills>0){
+        report.kills=kills;
+        const style=state.combat.style;
+        report.xp[style]=(report.xp[style]||0)+m.xp*kills;
+        report.xp.defence=(report.xp.defence||0)+Math.floor(m.xp*0.7)*kills;
+        report.xp.hitpoints=(report.xp.hitpoints||0)+Math.floor(m.xp*0.5)*kills;
+        report.gold=m.gold*kills;
+        for(const d of m.drops){
+          const expected=Math.floor(d.chance*kills);
+          if(expected>0){ report.items[d.id]=(report.items[d.id]||0)+expected*Math.round((d.qty[0]+d.qty[1])/2); }
+        }
+        state.totalKills+=kills;
+      }
+    }
+  }
+  // 应用离线收益
+  for(const id in report.items) addItem(id, report.items[id]);
+  for(const sid in report.xp) addXp(sid, report.xp[sid], true);
+  addGold(report.gold);
+  checkAchievements();
+  return report;
+}
+
+/* ================= 成就系统 ================= */
+const ACHIEVEMENTS = [
+  {id:'first_gather', name:'初次采集', desc:'完成第一次采集', icon:'🌿', gold:50, check:()=>state.stats.gather>=1},
+  {id:'first_craft', name:'初次制造', desc:'完成第一次生产', icon:'🔨', gold:50, check:()=>state.stats.craft>=1},
+  {id:'first_kill', name:'首杀', desc:'击败第一只怪物', icon:'⚔️', gold:50, check:()=>state.totalKills>=1},
+  {id:'skill_10', name:'初出茅庐', desc:'任一技能达到 10 级', icon:'📈', gold:100, check:()=>anySkillLvl(10)},
+  {id:'skill_25', name:'渐入佳境', desc:'任一技能达到 25 级', icon:'📈', gold:500, check:()=>anySkillLvl(25)},
+  {id:'skill_50', name:'炉火纯青', desc:'任一技能达到 50 级', icon:'🔥', gold:2000, check:()=>anySkillLvl(50)},
+  {id:'skill_99', name:'登峰造极', desc:'任一技能达到 99 级', icon:'👑', gold:10000, check:()=>anySkillLvl(99)},
+  {id:'total_50', name:'全面发展', desc:'总等级达到 50', icon:'⭐', gold:300, check:()=>totalLevel()>=50},
+  {id:'total_100', name:'全能大师', desc:'总等级达到 100', icon:'🌟', gold:1000, check:()=>totalLevel()>=100},
+  {id:'total_300', name:'传奇全才', desc:'总等级达到 300', icon:'💫', gold:5000, check:()=>totalLevel()>=300},
+  {id:'gold_1k', name:'第一桶金', desc:'拥有 1,000 金币', icon:'💰', gold:100, check:()=>state.gold>=1000},
+  {id:'gold_10k', name:'小有积蓄', desc:'拥有 10,000 金币', icon:'💰', gold:500, check:()=>state.gold>=10000},
+  {id:'gold_100k', name:'富甲一方', desc:'拥有 100,000 金币', icon:'🪙', gold:3000, check:()=>state.gold>=100000},
+  {id:'kill_10', name:'猎手', desc:'累计击杀 10 只怪物', icon:'🎯', gold:100, check:()=>state.totalKills>=10},
+  {id:'kill_100', name:'屠戮者', desc:'累计击杀 100 只怪物', icon:'💀', gold:500, check:()=>state.totalKills>=100},
+  {id:'kill_1000', name:'百战成神', desc:'累计击杀 1,000 只怪物', icon:'🗡️', gold:3000, check:()=>state.totalKills>=1000},
+  {id:'items_10', name:'收藏家', desc:'背包拥有 10 种物品', icon:'🎒', gold:200, check:()=>Object.keys(state.bank).length>=10},
+  {id:'items_30', name:'物品大师', desc:'背包拥有 30 种物品', icon:'🧰', gold:1000, check:()=>Object.keys(state.bank).length>=30},
+  {id:'equip_1', name:'全副武装', desc:'同时装备武器与胸甲', icon:'🛡️', gold:200, check:()=>!!getEquipped('weapon')&&!!getEquipped('body')},
+  {id:'all_10', name:'百花齐放', desc:'所有技能达到 10 级', icon:'🌈', gold:2000, check:()=>SKILLS.every(s=>lvl(s.id)>=10)},
+];
+function anySkillLvl(n){ return SKILLS.some(s=>lvl(s.id)>=n); }
+function totalLevel(){ return SKILLS.reduce((a,s)=>a+lvl(s.id),0); }
+function checkAchievements(){
+  let unlocked=0;
+  ACHIEVEMENTS.forEach(a=>{
+    if(!state.achievements[a.id] && a.check()){
+      state.achievements[a.id]=true;
+      addGold(a.gold);
+      toast('🏆 成就达成：'+a.name+'（+'+fmt(a.gold)+' 金币）');
+      pushLog('🏆 成就：'+a.name,'loot');
+      unlocked++;
+    }
+  });
+  if(unlocked) saveState();
+}
+
+/* ================= 任务系统 ================= */
+function taskName(t){
+  if(t.type==='collect') return '收集 '+ITEMS[t.itemId].icon+' '+ITEMS[t.itemId].name+' ×'+t.qty;
+  if(t.type==='kill') return '击败 '+MONSTER_MAP[t.monsterId].icon+' '+MONSTER_MAP[t.monsterId].name+' ×'+t.qty;
+  if(t.type==='gold') return '持有 '+fmt(t.qty)+' 金币';
+  if(t.type==='level') return SKILL_MAP[t.skillId].icon+' '+SKILL_MAP[t.skillId].name+' 达到 '+t.qty+' 级';
+  return '';
+}
+function taskDone(t){
+  if(t.type==='collect' || t.type==='kill') return t.progress>=t.qty;
+  if(t.type==='gold') return state.gold>=t.qty;
+  if(t.type==='level') return lvl(t.skillId)>=t.qty;
+  return false;
+}
+function generateTask(){
+  const tl=totalLevel();
+  const id='t'+Math.random().toString(36).slice(2,9);
+  const roll=Math.random();
+  if(roll<0.35){
+    const tier=Math.random()<0.7?1:2;
+    const line=pick(['milk','fiber','log','ore','fish']);
+    const itemId=line+tier;
+    const qty=rint(4, 8+Math.floor(tl/8));
+    return {id, type:'collect', itemId, qty, progress:0, reward:ITEMS[itemId].val*qty*2+30};
+  } else if(roll<0.6){
+    const maxLvl=Math.max(lvl('melee'),lvl('ranged'),lvl('magic'))+3;
+    const pool=MONSTERS.filter(m=>m.lvl<=maxLvl).slice(0,6);
+    const m=pick(pool.length?pool:MONSTERS);
+    const qty=rint(2,5);
+    return {id, type:'kill', monsterId:m.id, qty, progress:0, reward:m.gold*qty*2+30};
+  } else if(roll<0.8){
+    const qty=Math.min(200000, 100*Math.pow(2, Math.min(9, Math.floor(tl/12)+1)));
+    return {id, type:'gold', qty, progress:0, reward:Math.max(30, Math.floor(qty*0.25))};
+  } else {
+    const s=pick(SKILLS);
+    const target=Math.min(99, lvl(s.id)+rint(2,5));
+    return {id, type:'level', skillId:s.id, qty:target, progress:0, reward:120*target};
+  }
+}
+function updateTasks(event, payload){
+  let anyDone=false;
+  state.tasks.forEach(t=>{
+    if(t.done) return;
+    if(event==='collect' && t.type==='collect' && payload.itemId===t.itemId){ t.progress+=payload.qty; }
+    else if(event==='kill' && t.type==='kill' && payload.monsterId===t.monsterId){ t.progress++; }
+    else if(event==='gold' && t.type==='gold'){ t.progress=Math.min(t.qty, state.gold); }
+    else if(event==='level' && t.type==='level' && payload.skillId===t.skillId){ t.progress=Math.min(t.qty, lvl(t.skillId)); }
+    if(!t.done && taskDone(t)){
+      t.done=true; t.progress=t.qty;
+      addGold(t.reward);
+      toast('✅ 任务完成：'+taskName(t)+'（+'+fmt(t.reward)+' 金币）');
+      pushLog('✅ 任务完成：'+taskName(t),'loot');
+      anyDone=true;
+    }
+  });
+  if(anyDone){ refreshDoneTasks(); saveState(); }
+}
+function refreshDoneTasks(){ state.tasks=state.tasks.map(t=> t.done? generateTask() : t); }
+function refreshTasks(){ state.tasks=[generateTask(), generateTask(), generateTask()]; saveState(); renderRight(); }
+
+/* ================= 渲染 ================= */
+function renderAll(){ renderSidebar(); renderMain(); renderRight(); renderTopbar(); }
+function renderTopbar(){
+  $('#top-gold').textContent=fmt(state.gold);
+  $('#top-total').textContent=fmt(totalLevel());
+  $('#top-combat').textContent=fmt(COMBAT_SKILLS.reduce((s,k)=>s+lvl(k),0));
+  const ach=$('#top-ach'); if(ach) ach.textContent=Object.keys(state.achievements).length+'/'+ACHIEVEMENTS.length;
+}
+function skillIcon(s){ return `<div class="skill-ic" style="background:${s.color}22;color:${s.color}">${s.icon}</div>`; }
+function renderSidebar(){
+  const el=$('#sidebar'); let html='';
+  let lastGroup='';
+  SKILLS.forEach(s=>{
+    if(s.group!==lastGroup){ html+=`<div class="side-group">${s.group}</div>`; lastGroup=s.group; }
+    const xp=xpIntoLevel(state.skills[s.id].xp);
+    const pct=xp.need>0?(xp.into/xp.need*100):0;
+    const active = state.activeSkill===s.id;
+    const running = state.action && state.action.skillId===s.id;
+    html+=`<div class="skill-item ${active?'active':''}" onclick="selectSkill('${s.id}')">
+      ${skillIcon(s)}
+      <div class="skill-meta"><span class="skill-name">${s.name}</span><span class="skill-lv">${lvl(s.id)} 级${running?' · 进行中':''}</span></div>
+      ${running?`<div class="skill-bar"><i style="width:${pct}%"></i></div>`:''}
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+function selectSkill(id){
+  state.activeSkill=id;
+  if(COMBAT_SKILLS.includes(id)){
+    if(id==='melee'||id==='ranged'||id==='magic') state.combat.style=id;
+  }
+  renderAll();
+}
+function renderMain(){
+  const el=$('#main');
+  if(COMBAT_SKILLS.includes(state.activeSkill)){ renderCombat(el); } else { renderSkill(el); }
+}
+function ioRowHTML(icon,name,qty,have,need){
+  const enough = have===undefined || have>=qty;
+  return `<div class="io-row"><span class="tiny-ic">${icon}</span><span>${esc(name)}</span><span class="qty ${need?'lack':''}">×${qty}</span>${have!==undefined?`<span class="have ${enough?'':'lack'}">拥有 ${fmt(have)}</span>`:''}</div>`;
+}
+function renderSkill(el){
+  const s=SKILL_MAP[state.activeSkill];
+  const acts=ACTIONS[s.id]||[];
+  const xp=xpIntoLevel(state.skills[s.id].xp);
+  const pct=xp.need>0?(xp.into/xp.need*100):0;
+  let html=`<div class="view-head">
+    <div class="view-icon" style="background:${s.color}22;color:${s.color}">${s.icon}</div>
+    <div class="view-title">
+      <h1>${s.name}</h1>
+      <div class="sub">等级 ${lvl(s.id)} · ${fmt(xp.into)} / ${fmt(xp.need)} 经验</div>
+      <div class="xp-track"><i style="width:${pct}%"></i></div>
+    </div>
+    <div class="view-stats">
+      <button class="btn ${state.action?'btn-danger':'btn-ghost'}" onclick="stopAction()" ${state.action?'':'disabled'}>${state.action?'⏹ 停止':'空闲'}</button>
+    </div>
+  </div>
+  <div class="milestones">${milestonesOf(s.id).map(m=>{
+    const done=lvl(s.id)>=m.level;
+    return `<div class="mile ${done?'done':''}"><span class="lv">${m.level}级</span><span class="d">${m.desc}</span>${done?'<span class="ok">✓</span>':''}</div>`;
+  }).join('')}</div>
+  <div class="action-grid">`;
+  if(!acts.length) html+=`<div class="empty-hint">该技能暂无动作</div>`;
+  acts.forEach(a=>{
+    const unlocked=lvl(s.id)>=a.lvl;
+    const active=state.action && state.action.skillId===s.id && state.action.actionId===a.id;
+    const speedMult=buffMult('speed')*passiveSpeed(s.id);
+    const time=a.time/speedMult;
+    let io=`<div class="io-list">`;
+    if(a.in){ for(const k in a.in) io+=ioRowHTML(ITEMS[k].icon, ITEMS[k].name, a.in[k], countItem(k), a.in[k]); }
+    if(a.in && a.out) io+=`<div class="kv" style="margin:2px 0;color:var(--muted2)">↓</div>`;
+    if(a.out){ for(const o of a.out){ if(o.eq){ const E=EQUIPMENT[o.eq]; io+=ioRowHTML(E.icon, E.name, 1); } else { const ch=o.chance!==undefined?`（${Math.round(o.chance*100)}%）`:''; io+=ioRowHTML(ITEMS[o.id].icon, ITEMS[o.id].name, o.qty+ch); } } }
+    io+=`</div>`;
+    const insuff = a.in && !hasItems(a.in);
+    html+=`<div class="card ${unlocked?'':'locked'} ${active?'active-card':''}">
+      ${active?`<div class="card-progress"><i style="width:${state.action.progress*100}%"></i></div>`:''}
+      <div class="card-top">
+        <div class="card-ic">${a.icon}</div>
+        <div class="card-name">${esc(a.name)}</div>
+        <div class="card-lv"><span class="${unlocked?'ok':'req'}">${unlocked?'✔':'🔒'} ${a.lvl}级</span></div>
+      </div>
+      <div class="kv"><span>⏱ 耗时</span><b>${fmtTime(time)}</b></div>
+      <div class="kv"><span>✨ 经验</span><b>+${a.xp}</b></div>
+      ${io}
+      <button class="btn ${active?'btn-danger':'btn-primary'} btn-block" ${!unlocked?'disabled':''} onclick="${active?"stopAction()":"startAction('"+s.id+"','"+a.id+"')"}">${active?'进行中…停止':insuff?'材料不足':'开始'}</button>
+    </div>`;
+  });
+  html+=`</div>`;
+  el.innerHTML=html;
+}
+function renderCombat(el){
+  const ps=playerStats();
+  const m=MONSTER_MAP[state.combat.monsterId] || MONSTERS[0];
+  const chp=state.combat.playerHp, mhp=state.combat.monsterHp;
+  const phpct=Math.max(0,chp/ps.maxHP*100), mhpct=Math.max(0,mhp/m.hp*100);
+  const style=state.combat.style;
+  let html=`<div class="view-head">
+    <div class="view-icon" style="background:#d9534f22;color:#d9534f">⚔️</div>
+    <div class="view-title"><h1>战斗</h1>
+      <div class="sub">${COMBAT_SKILLS.map(id=>`${SKILL_MAP[id].icon} ${SKILL_MAP[id].name} ${lvl(id)}`).join(' · ')}</div>
+      <div class="sub" style="margin-top:3px">击杀 ${fmt(state.totalKills)} · ${state.combat.active?'战斗中':'待机'}</div>
+    </div>
+    <div class="view-stats">
+      ${state.combat.active?`<button class="btn btn-danger" onclick="stopCombat()">⏹ 撤退</button>`:''}
+    </div>
+  </div>
+  <div class="milestones">${COMBAT_SKILLS.flatMap(id=>milestonesOf(id)).map(m=>{
+    const done=lvl(m.skillId)>=m.level;
+    return `<div class="mile ${done?'done':''}"><span class="lv">${SKILL_MAP[m.skillId].icon}${m.level}级</span><span class="d">${m.desc}</span>${done?'<span class="ok">✓</span>':''}</div>`;
+  }).join('')}</div>
+  <div class="combat-layout">
+    <div class="arena">
+      <div class="style-pick">${STYLES.map(st=>`<button class="style-btn ${style===st.id?'active':''}" onclick="setStyle('${st.id}')"><span class="e">${st.icon}</span>${st.name}<small style="font-size:10px;color:var(--muted)">${lvl(st.id)}级</small></button>`).join('')}</div>
+      <div class="combatant">
+        <div class="face">🧑‍🚀</div>
+        <div class="who"><div class="nm">你 <span class="tag">${STYLES.find(x=>x.id===style).name}</span></div>
+          <div class="hpbar player"><i style="width:${phpct}%"></i><span class="hp-num">${fmt(Math.max(0,chp))} / ${fmt(ps.maxHP)}</span></div>
+        </div>
+      </div>
+      <div class="vs">⚔️</div>
+      <div class="combatant">
+        <div class="face">${m.icon}</div>
+        <div class="who"><div class="nm">${m.name} <span class="tag">${m.lvl}级</span></div>
+          <div class="hpbar monster"><i style="width:${mhpct}%"></i><span class="hp-num">${fmt(Math.max(0,mhp))} / ${fmt(m.hp)}</span></div>
+        </div>
+      </div>
+      <div class="kv"><span>你的攻击力</span><b>${ps.maxHit}</b></div>
+      <div class="kv"><span>命中率 / 减伤</span><b>${Math.round(ps.accuracy*100)}% / ${ps.reduction.toFixed(0)}</b></div>
+      <div class="fight-log" id="fight-log">${renderLog()}</div>
+    </div>
+    <div class="monster-list">
+      <div class="section-title" style="margin-top:0">🗺️ 怪物图鉴</div>
+      ${MONSTERS.map(mm=>{
+        const active=state.combat.active && state.combat.monsterId===mm.id;
+        const danger=mm.lvl>Math.max(lvl('melee'),lvl('ranged'),lvl('magic'))+5;
+        return `<div class="monster-card ${active?'active':''}" onclick="startCombat('${mm.id}')">
+          <div class="face">${mm.icon}</div>
+          <div class="info"><div class="nm">${mm.name}</div><div class="st">❤️ ${mm.hp} · ⚔️ ${mm.maxHit} · 💰 ${mm.gold}</div></div>
+          <div class="lv"><span class="${danger?'danger':''}">${mm.lvl}级</span></div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+  el.innerHTML=html;
+}
+function renderLog(){
+  if(!state.log.length) return '<span class="sys">— 战斗记录将显示在这里 —</span>';
+  return state.log.slice(0,30).map(l=>`<div class="${l.cls}">${esc(l.text)}</div>`).join('');
+}
+function renderRight(){
+  const body=$('#right-body');
+  document.querySelectorAll('.rtab').forEach(t=>t.classList.toggle('active', t.dataset.tab===state.rightTab));
+  if(state.rightTab==='char') renderChar(body);
+  else if(state.rightTab==='bank') renderBank(body);
+  else if(state.rightTab==='shop') renderShop(body);
+  else if(state.rightTab==='ach') renderAchievements(body);
+  else if(state.rightTab==='tasks') renderTasks(body);
+  else renderCloud(body);
+}
+function renderCloud(body){
+  const cfg=cloudGetConfig();
+  const synced=cfg.lastSync?('上次同步：'+new Date(cfg.lastSync).toLocaleString()):'尚未同步';
+  let html='<h3 class="section-title" style="margin-top:0">☁️ GitHub 云存档</h3>';
+  if(STORAGE_MEM){
+    html+=`<div class="cloud-status" style="background:#fff8e6;border-color:#f0d9a0"><span class="e">⚠️</span>
+      <div class="info"><b>当前预览环境禁用了本地存储</b><small>进度只保留在内存中，刷新页面会丢失。请连接 GitHub 并「上传存档」来永久保存进度；正式游玩（直接打开 html 文件）不受影响。</small></div>
+    </div>`;
+  }
+  if(cloudGetToken()){
+    html+=`
+      <div class="cloud-status"><span class="e">✅</span>
+        <div class="info"><b>已连接 GitHub</b><small>存档空间：私有 Gist${cfg.gistId?'（'+cfg.gistId.slice(0,10)+'…）':''}</small></div>
+      </div>
+      <div class="cloud-actions">
+        <button class="btn btn-primary" onclick="cloudUpload()">⬆️ 上传存档到云端</button>
+        <button class="btn btn-ghost" onclick="cloudDownload()">⬇️ 从云端下载存档</button>
+        <button class="btn btn-danger" onclick="cloudLogout()">🔌 断开连接</button>
+      </div>
+      <div class="cloud-synced">${synced}</div>
+      <div class="cloud-help"><b>提示：</b>换设备时，先连接同一个 Token，再点「下载存档」即可继续进度。上传会覆盖云端旧档，下载会覆盖本机旧档。</div>`;
+  } else {
+    html+=`
+      <div class="cloud-status off"><span class="e">🔒</span>
+        <div class="info"><b>未连接</b><small>输入 GitHub Token 即可开启跨设备云存档</small></div>
+      </div>
+      <div class="cloud-field"><label>GitHub Token</label>
+        <input id="cloud-token" type="password" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" spellcheck="false"></div>
+      <label class="cloud-remember"><input type="checkbox" id="cloud-remember" checked> 记住 Token（仅保存在本机浏览器）</label>
+      <button class="btn btn-primary" style="width:100%" onclick="cloudSaveToken()">🔗 连接</button>
+      <div class="cloud-help">
+        <b>如何获取 Token（约 1 分钟）：</b><br>
+        1️⃣ 打开 github.com/settings/tokens<br>
+        2️⃣ 点「Generate new token」→「Generate new token (classic)」<br>
+        3️⃣ 名称随意填，过期时间选「No expiration」<br>
+        4️⃣ 权限<b>只勾选 gist</b>，然后点生成<br>
+        5️⃣ 复制 <code>ghp_</code> 开头的 Token 粘贴到这里
+      </div>`;
+  }
+  body.innerHTML=html;
+}
+function renderChar(body){
+  const ps=playerStats();
+  const slots=[
+    {k:'weapon', nm:'武器'},{k:'head',nm:'头盔'},{k:'body',nm:'胸甲'},
+    {k:'legs',nm:'腿甲'},{k:'accessory',nm:'饰品'},{k:'pouch',nm:'袋子'},
+  ];
+  let passiveHtml='';
+  const pgl={xp:passiveGlobal('xp'),gold:passiveGlobal('gold'),dmg:passiveGlobal('dmg'),def:passiveGlobal('def'),hp:passiveGlobal('hp'),acc:passiveGlobal('acc')};
+  const pglRows=[];
+  if(pgl.xp>0)pglRows.push(['⭐','全局经验','+'+Math.round(pgl.xp*100)+'%']);
+  if(pgl.gold>0)pglRows.push(['💰','全局金币','+'+Math.round(pgl.gold*100)+'%']);
+  if(pgl.dmg>0)pglRows.push(['💥','战斗伤害','+'+Math.round(pgl.dmg*100)+'%']);
+  if(pgl.def>0)pglRows.push(['🛡️','受到伤害','-'+Math.round(pgl.def*100)+'%']);
+  if(pgl.hp>0)pglRows.push(['❤️','生命上限','+'+Math.round(pgl.hp*100)+'%']);
+  if(pgl.acc>0)pglRows.push(['🎯','命中率','+'+Math.round(pgl.acc*100)+'%']);
+  if(pglRows.length) passiveHtml=`<div class="char-block"><h3>📜 职业加成</h3>${pglRows.map(r=>`<div class="stat-row"><span>${r[0]} ${r[1]}</span><span class="v">${r[2]}</span></div>`).join('')}</div>`;
+  let buffs='';
+  cleanupBuffs();
+  const bs=Object.keys(state.buffs);
+  if(bs.length){ buffs+=`<div class="char-block"><h3>✨ 增益</h3>`; bs.forEach(k=>{ const b=state.buffs[k]; const info=BUFF_INFO[k]; const left=Math.max(0,Math.ceil((b.until-Date.now())/1000)); buffs+=`<div class="buff-row"><span>${info.icon}</span><b>${info.name}</b><span style="color:var(--muted)">+${Math.round((b.mult-1)*100)}%</span><span class="tm">${fmtTime(left)}</span></div>`; }); buffs+=`</div>`; }
+  body.innerHTML=`
+    <div class="char-block"><h3>📊 属性</h3>
+      <div class="stat-row"><span>生命上限</span><span class="v">${ps.maxHP}</span></div>
+      <div class="stat-row"><span>当前生命</span><span class="v">${fmt(Math.max(0,state.combat.playerHp))}</span></div>
+      <div class="stat-row"><span>攻击力（${STYLES.find(x=>x.id===state.combat.style).name}）</span><span class="v">${ps.maxHit}</span></div>
+      <div class="stat-row"><span>命中率</span><span class="v">${Math.round(ps.accuracy*100)}%</span></div>
+      <div class="stat-row"><span>减伤</span><span class="v">${ps.reduction.toFixed(0)}</span></div>
+      <div class="stat-row"><span>攻击间隔</span><span class="v">${ps.atkInterval.toFixed(2)}s</span></div>
+    </div>
+    <div class="char-block"><h3>🛡️ 装备</h3>
+      <div class="equip-grid">${slots.map(sl=>{
+        const e=getEquipped(sl.k);
+        if(e) return `<div class="equip-slot filled" onclick="unequip('${sl.k}')"><span class="e">${e.icon}</span><span class="slot-nm">${e.name}</span><span class="lvl">${e.lvl}级</span></div>`;
+        return `<div class="equip-slot" onclick="pickEquip('${sl.k}')"><span class="e">➕</span><span class="slot-nm">${sl.nm}</span></div>`;
+      }).join('')}</div>
+    </div>
+    <div class="char-block"><h3>🍽️ 自动进食</h3>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <select id="auto-eat-sel" style="flex:1;padding:8px;border-radius:9px;border:1px solid var(--border);background:#f7fafd;font-family:inherit;font-size:12px">
+          <option value="">关闭</option>
+          ${Object.values(ITEMS).filter(i=>i.heal).map(i=>`<option value="${i.name===undefined?'':''}" data-id="${Object.keys(ITEMS).find(k=>ITEMS[k]===i)}" ${state.combat.autoEat===Object.keys(ITEMS).find(k=>ITEMS[k]===i)?'selected':''}>${i.icon} ${i.name}（+${i.heal}）</option>`).join('')}
+        </select>
+      </div>
+      <div class="kv" style="margin-bottom:6px"><span>触发阈值</span><b id="thr-val">${state.combat.threshold}%</b></div>
+      <input type="range" min="10" max="90" step="5" value="${state.combat.threshold}" style="width:100%" id="thr-range">
+    </div>
+    ${passiveHtml}${buffs}
+    <div class="char-block"><h3>⚔️ 战斗风格</h3>
+      <div class="style-pick">${STYLES.map(st=>`<button class="style-btn ${state.combat.style===st.id?'active':''}" onclick="setStyle('${st.id}')"><span class="e">${st.icon}</span>${st.name}</button>`).join('')}</div>
+    </div>`;
+  const sel=$('#auto-eat-sel'), rng=$('#thr-range');
+  if(sel) sel.addEventListener('change', e=>{ state.combat.autoEat=e.target.selectedOptions[0].dataset.id||null; saveState(); });
+  if(rng) rng.addEventListener('input', e=>{ state.combat.threshold=parseInt(e.target.value); const v=$('#thr-val'); if(v) v.textContent=state.combat.threshold+'%'; });
+}
+function pickEquip(slot){
+  // 从背包中挑选可装备到该槽位的装备
+  const candidates=Object.keys(state.bank).filter(id=>EQUIPMENT[id] && EQUIPMENT[id].slot===slot);
+  if(!candidates.length){ toast('背包中没有可装备的物品'); return; }
+  const items=candidates.map(id=>`<div class="shop-row" style="cursor:pointer" onclick="equipItem('${id}')">
+    <span class="e">${EQUIPMENT[id].icon}</span>
+    <span class="nm">${EQUIPMENT[id].name}<br><small style="color:var(--muted)">${EQUIPMENT[id].lvl}级 · 伤害${EQUIPMENT[id].stats.damage} 防御${EQUIPMENT[id].stats.defence} 生命${EQUIPMENT[id].stats.hp}</small></span>
+    <button class="btn btn-primary btn-sm">装备</button>
+  </div>`).join('');
+  showModal('选择装备', items);
+}
+function renderBank(body){
+  const keys=Object.keys(state.bank).filter(k=>state.bank[k]>0);
+  const total=keys.reduce((s,k)=>s+state.bank[k],0);
+  let html=`<div class="bank-head"><b>🎒 背包</b><span class="cnt">${keys.length} 种 · ${fmt(total)} 件</span></div>
+    <input class="bank-search" id="bank-search" placeholder="搜索物品…">
+    <div class="bank-grid" id="bank-grid"></div>`;
+  body.innerHTML=html;
+  const grid=$('#bank-grid');
+  const search=$('#bank-search');
+  function draw(){
+    const q=(search.value||'').trim();
+    const list=keys.filter(k=>!q || ITEMS[k].name.includes(q));
+    if(!list.length){ grid.innerHTML=`<div class="bank-empty">${q?'没有匹配的物品':'背包空空如也'}</div>`; return; }
+    grid.innerHTML=list.map(k=>{
+      const it=ITEMS[k], isEq=!!EQUIPMENT[k];
+      const qty=state.bank[k];
+      return `<div class="bank-item" onmouseenter="tipItem(event,'${k}')" onmouseleave="untip()" onclick="clickBank('${k}')">
+        ${isEq?'<span class="eq-tag">装备</span>':''}
+        <span class="e">${it.icon}</span><span class="n">${esc(it.name)}</span>
+        <span class="q">${fmt(qty)}</span>
+      </div>`;
+    }).join('');
+  }
+  search.addEventListener('input', draw); draw();
+}
+function clickBank(id){
+  const it=ITEMS[id];
+  if(EQUIPMENT[id]){
+    const E=EQUIPMENT[id];
+    showModal(E.icon+' '+E.name, `
+      <div class="offline-report">${E.lvl}级装备 · ${E.slot==='weapon'?('风格：'+(E.style==='melee'?'近战':E.style==='ranged'?'远程':'魔法')):''}<br>
+      伤害 +${E.stats.damage} · 防御 +${E.stats.defence} · 生命 +${E.stats.hp}<br>售价 ${fmt(E.val)} 金币</div>
+      <div class="modal-actions" style="justify-content:flex-start">
+        <button class="btn btn-primary" onclick="equipItem('${id}');closeModal()">装备</button>
+        <button class="btn btn-danger" onclick="sellItem('${id}',1);closeModal()">出售</button>
+        <button class="btn btn-danger" onclick="sellItem('${id}',0);closeModal()">全部出售</button>
+      </div>`);
+  } else if(it.heal || it.buff){
+    showModal(it.icon+' '+it.name, `
+      <div class="offline-report">${it.heal?('恢复 '+it.heal+' 生命'):('增益：'+BUFF_INFO[it.buff].name+' +'+Math.round((it.mult-1)*100)+'%，持续 '+fmtTime(it.dur))}<br>售价 ${fmt(it.val)} 金币</div>
+      <div class="modal-actions" style="justify-content:flex-start">
+        <button class="btn btn-primary" onclick="useConsumable('${id}');closeModal()">使用</button>
+        <button class="btn btn-danger" onclick="sellItem('${id}',1);closeModal()">出售</button>
+        <button class="btn btn-danger" onclick="sellItem('${id}',0);closeModal()">全部出售</button>
+      </div>`);
+  } else {
+    showModal(it.icon+' '+it.name, `
+      <div class="offline-report">数量 ${fmt(countItem(id))}<br>售价 ${fmt(it.val)} 金币/件</div>
+      <div class="modal-actions" style="justify-content:flex-start">
+        <button class="btn btn-danger" onclick="sellItem('${id}',1);closeModal()">出售 1</button>
+        <button class="btn btn-danger" onclick="sellItem('${id}',0);closeModal()">全部出售</button>
+      </div>`);
+  }
+}
+function sellItem(id, qty){
+  const have=countItem(id); if(have<=0) return;
+  const n=qty===0?have:Math.min(qty,have);
+  const val=ITEMS[id].val;
+  removeItem(id,n); addGold(val*n);
+  toast('出售 '+ITEMS[id].name+' ×'+n+'，+'+fmt(val*n)+' 金币');
+  updateTasks('gold',{}); checkAchievements();
+  saveState(); renderRight();
+}
+function renderShop(body){
+  const saleable=['milk1','milk2','milk3','fiber1','fiber2','fiber3','log1','log2','log3','ore1','ore2','ore3','fish1','fish2','fish3','herb1','herb2','herb3','cheese1','plank1','cloth1','pot1','food1','tea1'];
+  let html=`<div class="shop-note">🏪 用金币快速购买基础物资（售价为物品价值的 2 倍）。出售物品可在背包中进行。</div>`;
+  saleable.forEach(id=>{
+    const it=ITEMS[id]; if(!it) return;
+    const price=it.val*2;
+    html+=`<div class="shop-row">
+      <span class="e">${it.icon}</span>
+      <span class="nm">${esc(it.name)}</span>
+      <span class="pr">${fmt(price)} 金币</span>
+      <button class="btn btn-ghost btn-sm buy" onclick="buyItem('${id}')">购买</button>
+    </div>`;
+  });
+  body.innerHTML=html;
+}
+function buyItem(id){
+  const it=ITEMS[id]; const price=it.val*2;
+  if(state.gold<price){ toast('金币不足'); return; }
+  state.gold-=price; addItem(id,1);
+  toast('购买 '+it.name);
+  saveState(); renderRight();
+}
+function renderAchievements(body){
+  const done=Object.keys(state.achievements).length;
+  let html=`<div class="shop-note">🏆 已解锁 <b>${done}</b> / ${ACHIEVEMENTS.length} 项成就，达成即自动领取金币奖励。</div>`;
+  ACHIEVEMENTS.forEach(a=>{
+    const got=!!state.achievements[a.id];
+    html+=`<div class="ach-row ${got?'':'locked'}">
+      <span class="e">${a.icon}</span>
+      <div class="info"><b>${a.name}</b><small>${a.desc}</small></div>
+      ${got?'<span class="done-mark">✓</span>':'<span class="reward">+'+fmt(a.gold)+' 💰</span>'}
+    </div>`;
+  });
+  body.innerHTML=html;
+}
+function renderTasks(body){
+  let html=`<div class="shop-note">📋 完成任务即可自动获得金币奖励，完成后自动刷新为新任务。</div>
+    <button class="btn btn-ghost btn-block" style="margin-bottom:12px" onclick="refreshTasks()">🔄 刷新全部任务</button>`;
+  state.tasks.forEach(t=>{
+    const done=taskDone(t);
+    const pct=Math.min(100, Math.floor((t.progress/t.qty)*100));
+    html+=`<div class="task-card ${done?'done':''}">
+      <div class="t-head">
+        <span class="t-icon">${t.type==='collect'?ITEMS[t.itemId].icon : t.type==='kill'?MONSTER_MAP[t.monsterId].icon : t.type==='gold'?'💰':SKILL_MAP[t.skillId].icon}</span>
+        <span class="t-name">${taskName(t)}</span>
+        <span class="t-reward">+${fmt(t.reward)} 💰</span>
+      </div>
+      <div class="task-bar"><i style="width:${pct}%"></i></div>
+      <div class="t-prog"><span>${done?'✅ 已完成':(t.type==='gold'?fmt(state.gold):t.progress)+' / '+fmt(t.qty)}</span></div>
+    </div>`;
+  });
+  body.innerHTML=html;
+}
+
+/* ================= Tooltip / Toast / Modal ================= */
+function tipItem(ev, id){
+  const it=ITEMS[id]; if(!it) return;
+  let inner=`<div class="tt-title">${it.icon} ${esc(it.name)}</div>`;
+  if(EQUIPMENT[id]){ const E=EQUIPMENT[id]; inner+=`<div class="tt-desc">${E.lvl}级装备<br>伤害 <span class="tt-stat">+${E.stats.damage}</span> · 防御 <span class="tt-stat">+${E.stats.defence}</span> · 生命 <span class="tt-stat">+${E.stats.hp}</span><br>售价 ${fmt(E.val)} 金币</div>`; }
+  else if(it.heal) inner+=`<div class="tt-desc">恢复 <span class="tt-stat">${it.heal}</span> 生命<br>售价 ${fmt(it.val)} 金币</div>`;
+  else if(it.buff) inner+=`<div class="tt-desc">${BUFF_INFO[it.buff].desc} <span class="tt-stat">+${Math.round((it.mult-1)*100)}%</span>，持续 ${fmtTime(it.dur)}</div>`;
+  else inner+=`<div class="tt-desc">${it.cat==='resource'?'采集资源':it.cat==='material'?'加工材料':'消耗品'}<br>售价 ${fmt(it.val)} 金币</div>`;
+  showTip(inner, ev);
+}
+function showTip(html, ev){
+  const t=$('#tooltip'); t.innerHTML=html; t.style.display='block';
+  const x=ev.clientX+14, y=ev.clientY+12;
+  const r=t.getBoundingClientRect();
+  t.style.left=(x+r.width>window.innerWidth-8?x-r.width-16:x)+'px';
+  t.style.top=(y+r.height>window.innerHeight-8?y-r.height-16:y)+'px';
+}
+function untip(){ $('#tooltip').style.display='none'; }
+function toast(msg){
+  const box=$('#toasts'); const d=document.createElement('div'); d.className='toast'; d.textContent=msg;
+  box.appendChild(d); setTimeout(()=>{ d.style.opacity='0'; d.style.transition='opacity .3s'; setTimeout(()=>d.remove(),320); }, 2600);
+  if(box.children.length>4) box.firstChild.remove();
+}
+function showModal(title, html){
+  $('#modal').innerHTML=`<h2>${title}</h2>${html}`;
+  $('#modal-wrap').classList.add('show');
+}
+function closeModal(){ $('#modal-wrap').classList.remove('show'); }
+$('#modal-wrap').addEventListener('click', e=>{ if(e.target.id==='modal-wrap') closeModal(); });
+
+/* ================= 主循环 ================= */
+/* 使用 setInterval 心跳：后台标签页 rAF 会暂停，而 interval 仍按约 1s 触发，保证放置挂机不中断 */
+let lastTick=Date.now();
+let lastRender=0;
+function tick(){
+  const now=Date.now();
+  const dt=Math.min((now-lastTick)/1000, 1.5); lastTick=now;
+  // 技能动作
+  if(state.action && !state.combat.active){
+    const a=getAction(state.action.skillId, state.action.actionId);
+    if(a){
+      const speedMult=buffMult('speed')*passiveSpeed(state.action.skillId);
+      state.action.progress+=dt/(a.time/speedMult);
+      let guard=0;
+      while(state.action && state.action.progress>=1 && guard<100){
+        state.action.progress-=1;
+        completeAction(false, null);
+        guard++;
+      }
+      if(state.action && state.action.progress<0) state.action.progress=0;
+    }
+  }
+  // 战斗
+  combatTick(dt);
+  // 脱战回血
+  if(!state.combat.active){
+    const ps=playerStats();
+    if(state.combat.playerHp<ps.maxHP) state.combat.playerHp=Math.min(ps.maxHP, state.combat.playerHp+ps.maxHP/12*dt);
+  }
+  // 节流渲染（后台标签页跳过渲染，省 CPU；回到前台立即刷新）
+  if(!document.hidden && now-lastRender>150){ renderDynamic(); lastRender=now; }
+}
+setInterval(tick, 250);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ lastTick=Date.now(); renderDynamic(); } });
+function renderDynamic(){
+  // 只更新变化频繁的部分
+  if(COMBAT_SKILLS.includes(state.activeSkill)) renderCombat($('#main'));
+  else renderSkill($('#main'));
+  renderTopbar();
+  // 更新侧边栏技能条
+  renderSidebar();
+  // 任务面板进度需实时刷新
+  if(state.rightTab==='tasks') renderRight();
+}
+/* ================= 启动 ================= */
+function init(){
+  $('#btn-save').addEventListener('click', ()=>{ saveState(); toast('已保存 💾'); });
+  $('#btn-reset').addEventListener('click', ()=>{
+    showModal('重置存档', `<div class="m-sub">确定要删除所有进度并重新开始吗？此操作不可撤销。</div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-danger" onclick="doReset()">确认重置</button></div>`);
+  });
+  document.querySelectorAll('.rtab').forEach(t=>t.addEventListener('click', ()=>{ state.rightTab=t.dataset.tab; renderRight(); }));
+  // 离线收益
+  const report=simulateOffline();
+  if(report && report.seconds>=30){
+    const lines=[];
+    lines.push(`离线时长：<b>${fmtTime(report.seconds)}</b>`);
+    if(report.kills) lines.push(`击杀怪物：<b>${fmt(report.kills)}</b> 只`);
+    if(report.gold) lines.push(`获得金币：<b>${fmt(report.gold)}</b>`);
+    const itemLines=Object.entries(report.items).map(([id,q])=>`${ITEMS[id].icon} ${ITEMS[id].name} ×<b>${fmt(q)}</b>`);
+    if(itemLines.length) lines.push(`获得物品：${itemLines.join('、')}`);
+    const xpLines=Object.entries(report.xp).map(([sid,x])=>`${SKILL_MAP[sid].icon} ${SKILL_MAP[sid].name} +<b>${fmt(x)}</b> 经验`);
+    if(xpLines.length) lines.push(`获得经验：${xpLines.join('、')}`);
+    showModal('🌙 欢迎回来！离线收益', `<div class="offline-report">${lines.join('<br>')}</div>
+      <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">收下啦</button></div>`);
+  }
+  if(!state.tasks.length) state.tasks=[generateTask(), generateTask(), generateTask()];
+  checkAchievements();
+  renderAll();
+  tick();
+}
+function doReset(){
+  store.removeItem(SAVE_KEY);
+  state=defaultState();
+  state.tasks=[generateTask(), generateTask(), generateTask()];
+  closeModal(); renderAll(); toast('存档已重置');
+}
+window.selectSkill=selectSkill; window.startAction=startAction; window.stopAction=stopAction;
+window.startCombat=startCombat; window.stopCombat=stopCombat; window.setStyle=setStyle;
+window.equipItem=equipItem; window.unequip=unequip; window.pickEquip=pickEquip;
+window.useConsumable=useConsumable; window.clickBank=clickBank; window.sellItem=sellItem;
+window.buyItem=buyItem; window.closeModal=closeModal; window.doReset=doReset;
+window.refreshTasks=refreshTasks;
+window.tipItem=tipItem; window.untip=untip;
+window.cloudSaveToken=cloudSaveToken; window.cloudUpload=cloudUpload; window.cloudDownload=cloudDownload;
+window.cloudLogout=cloudLogout; window.doCloudLogout=doCloudLogout;
+// 自动存档
+setInterval(saveState, 15000);
+window.addEventListener('beforeunload', saveState);
+init();
+</script>
+</body>
+</html>

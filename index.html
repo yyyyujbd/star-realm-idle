@@ -215,6 +215,17 @@ button{font-family:var(--font);cursor:pointer;border:none;background:none;color:
 .shop-row .nm{flex:1;font-size:12px;font-weight:700;min-width:0}
 .shop-row .pr{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}
 .shop-row .buy{flex:0 0 auto}
+.fortune-box{padding:14px;border-radius:14px;background:linear-gradient(135deg,#fff7e6,#fff2d0);border:1px solid #f2d8a0;margin-bottom:12px}
+.fortune-box .f-head{font-weight:800;font-size:14px;color:#b45309;display:flex;align-items:center;gap:8px}
+.fortune-box .f-head .f-icon{font-size:22px}
+.fortune-box .f-head .tag{font-size:10px;font-weight:700;color:#b45309;background:#fde9c0;padding:2px 8px;border-radius:8px}
+.fortune-box .f-bonus{font-size:12px;color:#92400e;margin:8px 0 4px;line-height:1.7}
+.fortune-box .f-cost{font-size:11px;color:#a16207;margin-bottom:10px}
+.train-box{padding:14px;border-radius:14px;background:linear-gradient(135deg,#f0f7ff,#eaf2ff);border:1px solid #c9dcf7;margin-bottom:12px}
+.train-box .f-head{font-weight:800;font-size:14px;color:#1d4ed8}
+.train-box .f-bonus{font-size:12px;color:#3b5b8a;margin:6px 0 10px;line-height:1.6}
+.train-row{display:flex;gap:8px}
+.train-select{flex:1;padding:8px;border-radius:9px;border:1px solid var(--border);background:#fff;font-family:inherit;font-size:12px;min-width:0}
 
 /* ===== Tooltip / Toast / Modal ===== */
 #tooltip{
@@ -479,6 +490,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function fmt(n){ n=Math.floor(n); if(n>=1e8) return (n/1e8).toFixed(2)+'亿'; if(n>=1e4) return (n/1e4).toFixed(1)+'万'; return n.toLocaleString('zh-CN'); }
 function fmtTime(s){
+  if(s<10 && s%1!==0) return s.toFixed(1)+'秒';
   s=Math.floor(s); if(s<60) return s+'秒';
   const m=Math.floor(s/60), r=s%60; if(m<60) return m+'分'+(r?r+'秒':'');
   const h=Math.floor(m/60), mm=m%60; return h+'小时'+(mm?mm+'分':'');
@@ -595,6 +607,30 @@ JOB_TEA.forEach(jt=>{
   addConsumable(id, SKILL_MAP[sid].name+'茶', '🍵', 'tea', {val:60, skillBuff:true, skillId:sid, speed:1.25, xp:1.15, dur:10*60});
 });
 
+/* ================= 差异化特产（部分系统玩法差异） ================= */
+/* 钓鱼→稀有鱼、采矿→宝石、冒险→宝箱：概率产出，价值高可出售 */
+const SPECIAL_LINES = {
+  rarefish:{names:['稀有河鱼','稀有鲈鱼','稀有鲑鱼','稀有金枪鱼','稀有龙鱼'], icons:['🐠','🐠','🐡','🦈','🐋'], valMult:4},
+  gem:     {names:['绿松石','紫水晶','红宝石','蓝宝石','星钻'],      icons:['🟢','🟣','🔴','🔵','💎'], valMult:5},
+  chest:   {names:['木宝箱','铁宝箱','银宝箱','金宝箱','星核宝箱'],   icons:['📦','📦','📦','🧰','🎁'], valMult:6},
+};
+(function buildSpecialItems(){
+  for(const line in SPECIAL_LINES){
+    const L=SPECIAL_LINES[line];
+    L.names.forEach((nm,i)=>{ ITEMS[line+(i+1)]={name:nm, icon:L.icons[i], cat:'resource', val:Math.round(TIER[i].val*L.valMult)}; });
+  }
+})();
+// 元素精华（炼金概率产出，临时全局速度加成）
+[['essence1','初级元素精华',1.15],['essence2','中级元素精华',1.20],['essence3','高级元素精华',1.25],['essence4','顶级元素精华',1.30],['essence5','神级元素精华',1.40]]
+  .forEach((f,i)=>{ addConsumable(f[0], f[1], '✨', 'potion', {val:Math.round(TIER[i].val*3), buff:'speed', mult:f[2], dur:15*60}); });
+// 豪华大餐（烹饪概率产出，强效治疗）
+[['feast1','豪华烤鱼','🐟',60],['feast2','香草烤鲈鱼','🐟',110],['feast3','鲑鱼拼盘','🍣',180],['feast4','金枪鱼盛宴','🐟',280],['feast5','龙鱼全宴','🐉',420]]
+  .forEach((f,i)=>{ addConsumable(f[0], f[1], f[2], 'food', {val:Math.round(TIER[i].val*3), heal:f[3]}); });
+// 招财符（商店购买，临时金币加成）
+addConsumable('charm1','招财符','🧧','potion',{val:150, buff:'gold', mult:1.30, dur:30*60});
+addConsumable('charm2','金运符','🧧','potion',{val:400, buff:'gold', mult:1.50, dur:30*60});
+addConsumable('charm3','财神符','🧧','potion',{val:1000, buff:'gold', mult:1.80, dur:30*60});
+
 /* ================= 数据：装备 ================= */
 const EQUIPMENT = {};   // id -> {name,icon,slot,style,lvl,stats:{damage,defence,hp},val}
 const EQ_NAMES = {
@@ -648,14 +684,35 @@ const TOOL_BASE = {
   alchemy:{name:'炼金釜', icon:'⚗️'},
 };
 const TOOL_PREFIX=['粗制','精良','秘银','星辉','星核'];
-const TOOL_SPEED=[1.04,1.09,1.15,1.22,1.30];
-const TOOL_XP=[1.02,1.05,1.09,1.14,1.20];
+/* 工具加成画像：不同系统工具侧重不同（速度型 / 经验型 / 均衡型） */
+const TOOL_PROFILES = {
+  speed:{ speed:[1.10,1.20,1.32,1.46,1.65], xp:[1.03,1.07,1.12,1.18,1.26] },
+  xp:   { speed:[1.04,1.09,1.15,1.22,1.30], xp:[1.06,1.12,1.20,1.30,1.45] },
+  bal:  { speed:[1.06,1.13,1.21,1.31,1.45], xp:[1.04,1.09,1.15,1.22,1.32] },
+};
+/* 工具制造/升级配方：每个系统使用不同材料组合（3 种材料），体现差异化与合成深度 */
+const TOOL_RECIPE = {
+  // 采集系
+  milking:      { profile:'speed', make:{milk1:4, plank1:2, fiber1:1},  upgrade:[{ore1:3, cheese1:1},{ore2:3, cheese2:1},{ore3:3, cheese3:1},{ore4:4, cheese4:2}] },
+  foraging:     { profile:'xp',    make:{fiber1:4, plank1:2, herb1:1},  upgrade:[{herb1:3, cloth1:1},{herb2:3, cloth2:1},{herb3:3, cloth3:1},{herb4:4, cloth4:2}] },
+  woodcutting:  { profile:'speed', make:{log1:4, ore1:2, fiber1:1},    upgrade:[{plank2:3, ore2:1},{plank3:3, ore3:1},{plank4:3, ore4:1},{plank5:4, ore5:2}] },
+  mining:       { profile:'speed', make:{ore1:4, plank1:2, milk1:1},   upgrade:[{cheese2:3, plank2:1},{cheese3:3, plank3:1},{cheese4:3, plank4:1},{cheese5:4, plank5:2}] },
+  fishing:      { profile:'xp',    make:{fiber1:4, log1:2, herb1:1},   upgrade:[{plank2:3, fiber2:1},{plank3:3, fiber3:1},{plank4:3, fiber4:1},{plank5:4, fiber5:2}] },
+  // 生产系
+  cheesesmithing:{ profile:'speed', make:{plank1:3, ore1:3, cloth1:1}, upgrade:[{cheese2:3, ore2:1},{cheese3:3, ore3:1},{cheese4:3, ore4:1},{cheese5:4, ore5:2}] },
+  crafting:     { profile:'speed', make:{plank1:3, cloth1:2, ore1:1},  upgrade:[{ore2:3, plank2:1},{ore3:3, plank3:1},{ore4:3, plank4:1},{ore5:4, plank5:2}] },
+  tailoring:    { profile:'xp',    make:{cloth1:3, fiber1:2, herb1:1}, upgrade:[{fiber2:3, cloth2:1},{fiber3:3, cloth3:1},{fiber4:3, cloth4:1},{fiber5:4, cloth5:2}] },
+  cooking:      { profile:'xp',    make:{ore1:3, log1:2, fiber1:1},    upgrade:[{fish2:3, herb2:1},{fish3:3, herb3:1},{fish4:3, herb4:1},{fish5:4, herb5:2}] },
+  brewing:      { profile:'xp',    make:{herb1:3, cheese1:2, milk1:1}, upgrade:[{herb2:3, milk2:1},{herb3:3, milk3:1},{herb4:3, milk4:1},{herb5:4, milk5:2}] },
+  alchemy:      { profile:'speed', make:{herb1:3, ore1:3, milk1:1},    upgrade:[{cheese2:3, herb2:1},{cheese3:3, herb3:1},{cheese4:3, herb4:1},{cheese5:4, herb5:2}] },
+};
 (function buildTools(){
   for(const skillId in TOOL_BASE){
     const B=TOOL_BASE[skillId];
+    const prof=TOOL_PROFILES[(TOOL_RECIPE[skillId]||{}).profile || 'bal'];
     TOOL_PREFIX.forEach((p,i)=>{
       const id='tool_'+skillId+(i+1);
-      const tool={name:p+B.name, icon:B.icon, skillId, tier:i+1, lvl:TIER[i].lvl, speed:TOOL_SPEED[i], xp:TOOL_XP[i], val:Math.round(TIER[i].val*3)};
+      const tool={name:p+B.name, icon:B.icon, skillId, tier:i+1, lvl:TIER[i].lvl, speed:prof.speed[i], xp:prof.xp[i], val:Math.round(TIER[i].val*3)};
       TOOLS[id]=tool;
       ITEMS[id]={name:tool.name, icon:tool.icon, cat:'tool', val:tool.val};
     });
@@ -676,12 +733,12 @@ const ACTIONS = {};
 function act(skillId, id, name, icon, lvl, time, xp, inMap, out){
   (ACTIONS[skillId] || (ACTIONS[skillId]=[])).push({skillId,id,name,icon,lvl,time,xp,in:inMap||null,out:out||null});
 }
-// 采集
+// 采集：耗时随材料等级延长（高级资源更稀有），价值与经验同步提升
 function gatherActions(skillId, line, nameFn, iconFn){
   for(let i=0;i<5;i++){
     const t=TIER[i], id=line+(i+1);
     const nm=nameFn?nameFn(id):ITEMS[id].name;
-    act(skillId, id, nm, ITEMS[id].icon, t.lvl, 2+i*0.5, 8*(i+1), null, [{id, qty:1}]);
+    act(skillId, id, nm, ITEMS[id].icon, t.lvl, 2+i*0.6, 8*(i+1), null, [{id, qty:1}]);
   }
 }
 gatherActions('milking','milk');
@@ -694,12 +751,23 @@ ACTIONS.foraging.forEach(a=>{
   const tier=parseInt(a.id.slice(-1));
   a.out.push({id:'herb'+tier, qty:1, chance:0.35});
 });
+// 采矿差异化：矿脉勘探，概率发现宝石
+ACTIONS.mining.forEach(a=>{
+  const tier=parseInt(a.id.slice(-1));
+  a.out.push({id:'gem'+tier, qty:1, chance:0.07});
+});
+// 钓鱼差异化：垂钓奇遇，概率钓到稀有鱼与藏宝箱
+ACTIONS.fishing.forEach(a=>{
+  const tier=parseInt(a.id.slice(-1));
+  a.out.push({id:'rarefish'+tier, qty:1, chance:0.08});
+  a.out.push({id:'chest'+tier, qty:1, chance:0.03});
+});
 
 // 生产：炼制（原料→材料）
 function refineActions(skillId, fromLine, toLine){
   for(let i=0;i<5;i++){
     const t=TIER[i];
-    act(skillId, fromLine+(i+1)+'->'+toLine+(i+1), '炼制'+ITEMS[toLine+(i+1)].name, ITEMS[toLine+(i+1)].icon, t.lvl, 2.5+i*0.4, 10*(i+1), {[fromLine+(i+1)]:2}, [{id:toLine+(i+1), qty:1}]);
+    act(skillId, fromLine+(i+1)+'->'+toLine+(i+1), '炼制'+ITEMS[toLine+(i+1)].name, ITEMS[toLine+(i+1)].icon, t.lvl, 2.4+i*0.3, 10*(i+1), {[fromLine+(i+1)]:2}, [{id:toLine+(i+1), qty:1}]);
   }
 }
 refineActions('cheesesmithing','milk','cheese');
@@ -713,7 +781,7 @@ function craftEquipment(skillId, eqKey, mat1Line, mat2Line){
     const E=EQUIPMENT[eqId];
     const inMap={[mat1Line+(i+1)]:2};
     if(mat2Line) inMap[mat2Line+(i+1)]=1;
-    act(skillId, eqId, E.name, E.icon, t.lvl, 3.5+i*0.6, 16*(i+1), inMap, [{eq:eqId, qty:1}]);
+    act(skillId, eqId, E.name, E.icon, t.lvl, 3.3+i*0.5, 16*(i+1), inMap, [{eq:eqId, qty:1}]);
   }
 }
 // 锻造：近战武器 + 重甲
@@ -731,9 +799,9 @@ craftEquipment('tailoring','lb','cloth','herb');
 craftEquipment('tailoring','ll','cloth','herb');
 craftEquipment('tailoring','pouch','cloth',null);
 
-// 烹饪：鱼 → 食物
-[['fish1','food1'],['fish2','food2'],['fish3','food3'],['fish4','food4'],['fish5','food5']].forEach((p,i)=>{
-  act('cooking', 'cook'+p[1], ITEMS[p[1]].name, ITEMS[p[1]].icon, TIER[i].lvl, 2.5+i*0.4, 11*(i+1), {[p[0]]:2}, [{id:p[1], qty:1}]);
+// 烹饪：鱼+药草 → 食物，概率产出豪华大餐（料理玩法）
+[['fish1','herb1','food1'],['fish2','herb2','food2'],['fish3','herb3','food3'],['fish4','herb4','food4'],['fish5','herb5','food5']].forEach((p,i)=>{
+  act('cooking', 'cook'+p[2], ITEMS[p[2]].name, ITEMS[p[2]].icon, TIER[i].lvl, 2.5+i*0.4, 11*(i+1), {[p[0]]:2, [p[1]]:1}, [{id:p[2], qty:1},{id:'feast'+(i+1), qty:1, chance:0.12}]);
 });
 // 冲泡：药草+魔晶 → 茶/咖啡
 [['herb1','milk1','tea1'],['herb2','milk2','tea2'],['herb3','milk3','tea3'],['herb4','milk4','tea4'],['herb5','milk5','tea5']].forEach((p,i)=>{
@@ -751,27 +819,24 @@ JOB_TEA.forEach(jt=>{
   const id='jtea_'+jt.skillId;
   act('brewing','brew'+id, ITEMS[id].name, '🍵', TIER[jt.herb-1].lvl, 3+jt.herb*0.3, 12*(jt.herb+1), {['herb'+jt.herb]:1, [jt.mat+jt.matTier]:1}, [{id, qty:1}]);
 });
-// 炼金：药草+矿石 → 强化石（用于装备强化）
+// 炼金：药草+矿石 → 强化石，概率产出元素精华（炼金实验玩法）
 STONE_PREFIX.forEach((p,i)=>{
   const id='stone'+(i+1);
-  act('alchemy','alchstone'+(i+1), ITEMS[id].name, '💠', TIER[i].lvl, 4+i*0.5, 14*(i+1), {['herb'+(i+1)]:1, ['ore'+(i+1)]:1}, [{id, qty:1}]);
+  act('alchemy','alchstone'+(i+1), ITEMS[id].name, '💠', TIER[i].lvl, 4+i*0.5, 14*(i+1), {['herb'+(i+1)]:1, ['ore'+(i+1)]:1}, [{id, qty:1},{id:'essence'+(i+1), qty:1, chance:0.12}]);
 });
 
-/* 工具制造材料：每个技能对应的基础资源线（用于制造/升级工具） */
-const TOOL_MAT = {
-  milking:'milk', foraging:'fiber', woodcutting:'log', mining:'ore', fishing:'fish',
-  cheesesmithing:'cheese', crafting:'plank', tailoring:'cloth',
-  cooking:'fish', brewing:'herb', alchemy:'herb',
-};
-/* 生成「制造工具」与「逐阶升级工具」动作：工具需自己制造，无法直接购买 */
+/* 生成「制造工具」与「逐阶升级工具」动作：配方见 TOOL_RECIPE，工具需自己制造、无法购买 */
 (function buildToolActions(){
   for(const skillId in TOOL_BASE){
-    const B=TOOL_BASE[skillId], line=TOOL_MAT[skillId];
+    const B=TOOL_BASE[skillId], R=TOOL_RECIPE[skillId]||{make:{},upgrade:[{}]};
     // 制造 1 阶工具（5 级解锁）
-    act(skillId, 'toolmake_'+skillId, '制造·'+TOOL_PREFIX[0]+B.name, B.icon, 5, 3, 10, {[line+'1']:3}, [{id:'tool_'+skillId+'1', qty:1}]);
-    // 逐阶升级：tier i → tier i+1（消耗当前阶工具 + 下一阶材料）
+    act(skillId, 'toolmake_'+skillId, '制造·'+TOOL_PREFIX[0]+B.name, B.icon, 5, 3, 12, R.make, [{id:'tool_'+skillId+'1', qty:1}]);
+    // 逐阶升级：tier i → tier i+1（消耗当前阶工具 + 对应阶材料组合）
     for(let i=1;i<5;i++){
-      act(skillId, 'toolup_'+skillId+'_'+(i+1), '升级·'+TOOL_PREFIX[i]+B.name, B.icon, TIER[i].lvl, 4+i*0.6, 14*(i+1), {['tool_'+skillId+i]:1, [line+(i+1)]:2}, [{id:'tool_'+skillId+(i+1), qty:1}]);
+      const inMap={['tool_'+skillId+i]:1};
+      const extra=(R.upgrade[i-1]||{});
+      for(const k in extra) inMap[k]=extra[k];
+      act(skillId, 'toolup_'+skillId+'_'+(i+1), '升级·'+TOOL_PREFIX[i]+B.name, B.icon, TIER[i].lvl, 4+i*0.5, 15*(i+1), inMap, [{id:'tool_'+skillId+(i+1), qty:1}]);
     }
   }
 })();
@@ -1022,6 +1087,7 @@ function defaultState(){
     buffs:{}, log:[], lastSave:Date.now(), rightTab:'char',
     achievements:{}, tasks:[], stats:{gather:0, craft:0, sold:0, bought:0, consumed:0, fed:0, offlines:0, enchantOk:0, kills:{}, relicProduce:{}, relicDmgTaken:0, relicSkillXp:{}},
     tools:{}, enchants:{}, relics:{},
+    fortune:{level:0},
     pets:defaultPets(), activePet:'cat',
   };
 }
@@ -1048,6 +1114,7 @@ function mergeState(s){
   out.tools=s.tools||{};
   out.enchants=s.enchants||{};
   out.relics=s.relics||{};
+  out.fortune={level:0, ...(s.fortune||{})};
   out.pets={...defaultPets(), ...(s.pets||{})};
   for(const id in out.pets){ if(!out.pets[id].stage) out.pets[id].stage=1; }
   if(out.activePet && (!out.pets[out.activePet] || !out.pets[out.activePet].owned)) out.activePet=null;
@@ -1160,13 +1227,13 @@ function doCloudLogout(){
 /* ================= 等级/经验 ================= */
 function lvl(skillId){ return state.skills[skillId].level; }
 function addGold(n){
-  const v=Math.floor(n*(1+passiveGlobal('gold')+petBonus('gold')+achievementBonus('gold')+relicBonus('gold')));
+  const v=Math.floor(n*(1+passiveGlobal('gold')+petBonus('gold')+achievementBonus('gold')+relicBonus('gold')+fortuneBonus('gold'))*buffMult('gold'));
   state.gold+=v; return v;
 }
 function addXp(skillId, amount, silent){
   const s=state.skills[skillId];
   const before=s.level;
-  s.xp+=amount*(1+passiveGlobal('xp')+petBonus('xp')+achievementBonus('xp')+relicBonus('xp'));
+  s.xp+=amount*(1+passiveGlobal('xp')+petBonus('xp')+achievementBonus('xp')+relicBonus('xp')+fortuneBonus('xp'));
   state.stats.relicSkillXp[skillId]=(state.stats.relicSkillXp[skillId]||0)+amount;
   const after=levelFromXp(s.xp);
   if(after>before){
@@ -1468,6 +1535,7 @@ const BUFF_INFO = {
   dmg:     {name:'伤害提升', icon:'💥', desc:'战斗伤害提升'},
   atkspeed:{name:'攻速提升', icon:'⚡', desc:'攻击速度提升'},
   def:     {name:'减伤提升', icon:'🛡️', desc:'受到的伤害降低'},
+  gold:    {name:'金币获取', icon:'💰', desc:'金币获取提升'},
 };
 function applyBuff(buff, mult, dur){
   const now=Date.now();
@@ -1489,7 +1557,7 @@ function skillBuff(skillId){
 }
 function actionSpeedMult(skillId){
   const t=toolFor(skillId), sb=skillBuff(skillId);
-  return buffMult('speed')*passiveSpeed(skillId)*(t?t.speed:1)*(sb?sb.speed:1)*(1+petBonus('speed')+achievementBonus('speed')+relicBonus('skillSpeed', skillId));
+  return buffMult('speed')*passiveSpeed(skillId)*(t?t.speed:1)*(sb?sb.speed:1)*(1+petBonus('speed')+achievementBonus('speed')+relicBonus('skillSpeed', skillId)+fortuneBonus('speed'));
 }
 function actionXpMult(skillId){
   const t=toolFor(skillId), sb=skillBuff(skillId);
@@ -1518,6 +1586,72 @@ function useConsumable(itemId){
     pushLog('你使用了 '+it.name+'（'+SKILL_MAP[it.skillId].name+' 速度+经验加成）','sys');
   }
   saveState(); renderAll();
+}
+
+/* ================= 金币用途：财神供奉 / 技能训练 ================= */
+const FORTUNE_MAX_LEVEL = 60;
+/* 供奉财神：每升一级所需金币指数上升（×1.5），提供永久全局加成 */
+function fortuneCost(nextLevel){ return Math.floor(150 * Math.pow(1.5, nextLevel-1)); }
+function fortuneLevel(){ return state.fortune.level || 0; }
+function fortuneBonus(type){
+  const lv=fortuneLevel();
+  if(lv<=0) return 0;
+  switch(type){
+    case 'gold':     return lv * 0.05;              // 每级 +5% 金币
+    case 'xp':       return Math.floor(lv/3) * 0.01; // 每 3 级 +1% 经验
+    case 'speed':    return Math.floor(lv/5) * 0.02; // 每 5 级 +2% 采集生产速度
+    case 'dmg':      return Math.floor(lv/10) * 0.03;// 每 10 级 +3% 战斗伤害
+    case 'def':      return Math.floor(lv/15) * 0.02;// 每 15 级 +2% 减伤
+    case 'atkspeed': return Math.floor(lv/20) * 0.02;// 每 20 级 +2% 攻速
+    default: return 0;
+  }
+}
+function fortuneDesc(lv){
+  if(lv<=0) return '尚未供奉，供奉后获得永久全局加成';
+  const parts=[];
+  if(fortuneBonus('gold')>0) parts.push('💰 金币 +'+Math.round(fortuneBonus('gold')*100)+'%');
+  if(fortuneBonus('xp')>0) parts.push('⭐ 经验 +'+Math.round(fortuneBonus('xp')*100)+'%');
+  if(fortuneBonus('speed')>0) parts.push('⚡ 采集生产速度 +'+Math.round(fortuneBonus('speed')*100)+'%');
+  if(fortuneBonus('dmg')>0) parts.push('💥 伤害 +'+Math.round(fortuneBonus('dmg')*100)+'%');
+  if(fortuneBonus('def')>0) parts.push('🛡️ 减伤 +'+Math.round(fortuneBonus('def')*100)+'%');
+  if(fortuneBonus('atkspeed')>0) parts.push('⚡ 攻速 +'+Math.round(fortuneBonus('atkspeed')*100)+'%');
+  return parts.join('　') || '加成生效中';
+}
+function worshipFortune(){
+  const lv=fortuneLevel();
+  if(lv>=FORTUNE_MAX_LEVEL){ toast('财神供奉已满级 '+FORTUNE_MAX_LEVEL+' 级'); return; }
+  const nextLv=lv+1, cost=fortuneCost(nextLv);
+  if(state.gold<cost){ toast('金币不足（供奉需 '+fmt(cost)+' 金币）'); return; }
+  state.gold-=cost;
+  state.fortune.level=nextLv;
+  toast('🙏 财神供奉升至 '+nextLv+' 级，金币加成 +'+Math.round(fortuneBonus('gold')*100)+'%');
+  pushLog('🙏 财神供奉：'+nextLv+' 级（'+fortuneDesc(nextLv)+'）','loot');
+  checkAchievements();
+  saveState(); renderAll();
+}
+/* 技能速成训练：花费金币直接提升 1 级，价格随等级指数上升 */
+function trainCost(skillId){ const L=lvl(skillId); return Math.floor(25 * Math.pow(1.4, L-1)); }
+function trainSkill(skillId){
+  const s=state.skills[skillId];
+  if(!s) return;
+  if(s.level>=99){ toast(SKILL_MAP[skillId].name+' 已满级'); return; }
+  const cost=trainCost(skillId);
+  if(state.gold<cost){ toast('金币不足（训练需 '+fmt(cost)+' 金币）'); return; }
+  state.gold-=cost;
+  const need=xpForLevel(s.level+1);
+  s.xp+=need;
+  state.stats.relicSkillXp[skillId]=(state.stats.relicSkillXp[skillId]||0)+need;
+  const after=levelFromXp(s.xp);
+  s.level=after;
+  toast('📚 '+SKILL_MAP[skillId].name+' 训练完成，升至 '+after+' 级');
+  pushLog('📚 技能训练：'+SKILL_MAP[skillId].name+' → '+after+' 级','loot');
+  checkAchievements(); updateTasks('level',{skillId});
+  saveState(); renderAll();
+}
+function trainSelected(){
+  const sel=document.getElementById('train-skill');
+  if(!sel || !sel.value) return;
+  trainSkill(sel.value);
 }
 
 /* ================= 动作系统 ================= */
@@ -1610,12 +1744,12 @@ function playerStats(){
   }
   const accId=state.equipment['accessory']; if(accId){ const acc=EQUIPMENT[accId], m=eqStatMult(accId); accDmg+=Math.floor(acc.stats.damage*m); hp+=Math.floor(acc.stats.hp*m); }
   const pouchId=state.equipment['pouch']; if(pouchId){ hp+=Math.floor(EQUIPMENT[pouchId].stats.hp*eqStatMult(pouchId)); }
-  const maxHit=Math.floor((4+slv*1.4+wdmg+accDmg)*buffMult('dmg')*(1+passiveGlobal('dmg')+petBonus('dmg')+achievementBonus('dmg')+relicBonus('dmg')+relicBonus('styleDmg', style)));
+  const maxHit=Math.floor((4+slv*1.4+wdmg+accDmg)*buffMult('dmg')*(1+passiveGlobal('dmg')+petBonus('dmg')+achievementBonus('dmg')+relicBonus('dmg')+relicBonus('styleDmg', style)+fortuneBonus('dmg')));
   const accuracy=Math.min(0.97, 0.75+slv*0.003+passiveGlobal('acc')+achievementBonus('acc')+relicBonus('acc'));
   const reduction=dlv*0.35+def*0.5;
   const maxHP=Math.floor((20+hlv*4+hp)*(1+passiveGlobal('hp')+petBonus('hp')+achievementBonus('hp')+relicBonus('hp')));
   const baseInterval = style==='melee'?2.4 : style==='ranged'?2.6 : 2.8;
-  const atkInterval=baseInterval/(buffMult('atkspeed')*(1+petBonus('atkspeed')+achievementBonus('atkspeed')+relicBonus('atkspeed')));
+  const atkInterval=baseInterval/(buffMult('atkspeed')*(1+petBonus('atkspeed')+achievementBonus('atkspeed')+relicBonus('atkspeed')+fortuneBonus('atkspeed')));
   return {maxHit, accuracy, reduction, maxHP, atkInterval, styleLevel:slv};
 }
 function setStyle(style){ state.combat.style=style; renderAll(); }
@@ -2218,6 +2352,11 @@ function renderChar(body){
     if(v>0) achRows.push([BONUS_LABEL[t].icon, BONUS_LABEL[t].name, '+'+Math.round(v*100)+'%']);
   }
   if(achRows.length) achHtml=`<div class="char-block"><h3>🏆 成就加成</h3>${achRows.map(r=>`<div class="stat-row"><span>${r[0]} ${r[1]}</span><span class="v">${r[2]}</span></div>`).join('')}</div>`;
+  let fortuneHtml='';
+  if(fortuneLevel()>0){
+    const ft=fortuneDesc(fortuneLevel()).split('　').map(s=>`<div class="stat-row"><span>${s}</span></div>`).join('');
+    fortuneHtml=`<div class="char-block"><h3>🙏 财神庇佑（Lv.${fortuneLevel()}）</h3>${ft}</div>`;
+  }
   let buffs='';
   cleanupBuffs();
   const bs=Object.keys(state.buffs);
@@ -2272,7 +2411,7 @@ function renderChar(body){
       <div class="kv" style="margin-bottom:6px"><span>触发阈值</span><b id="thr-val">${state.combat.threshold}%</b></div>
       <input type="range" min="10" max="90" step="5" value="${state.combat.threshold}" style="width:100%" id="thr-range">
     </div>
-    ${petHtml}${achHtml}${passiveHtml}${buffs}
+    ${petHtml}${achHtml}${fortuneHtml}${passiveHtml}${buffs}
     <div class="char-block"><h3>⚔️ 战斗风格</h3>
       <div class="style-pick">${STYLES.map(st=>`<button class="style-btn ${state.combat.style===st.id?'active':''}" onclick="setStyle('${st.id}')"><span class="e">${st.icon}</span>${st.name}</button>`).join('')}</div>
     </div>`;
@@ -2392,7 +2531,34 @@ function sellItem(id, qty){
 function renderShop(body){
   const saleable=['milk1','milk2','milk3','fiber1','fiber2','fiber3','log1','log2','log3','ore1','ore2','ore3','fish1','fish2','fish3','herb1','herb2','herb3','cheese1','plank1','cloth1','pot1','food1','tea1'];
   for(let i=1;i<=3;i++) saleable.push('stone'+i);
-  let html=`<div class="shop-note">🏪 用金币快速购买基础物资与强化石（售价为物品价值的 2 倍）。<b>工具需在对应技能中自行制造并逐阶升级</b>。出售物品可在背包中进行。</div>`;
+  const flv=fortuneLevel();
+  const fMax=flv>=FORTUNE_MAX_LEVEL;
+  const fcost=fMax?0:fortuneCost(flv+1);
+  let html=`
+    <div class="fortune-box">
+      <div class="f-head"><span class="f-icon">🙏</span> 财神供奉 <span class="tag">Lv.${flv}</span></div>
+      <div class="f-bonus">${fortuneDesc(flv)}</div>
+      <div class="f-cost">${fMax?'已达满级，财神庇佑常伴':'下一级所需：'+fmt(fcost)+' 金币（每级 ×1.5 指数上升）'}</div>
+      <button class="btn ${fMax?'btn-ghost':'btn-primary'} btn-block" onclick="worshipFortune()" ${fMax?'disabled':''}>${fMax?'🙏 已满级':'🙏 供奉财神（+'+Math.round(fortuneBonus('gold')*100)+'% → +'+Math.round((flv+1)*5)+'% 金币）'}</button>
+    </div>
+    <div class="train-box">
+      <div class="f-head">📚 技能速成训练</div>
+      <div class="f-bonus">花费金币直接提升所选技能 1 级，价格随等级指数上升（×1.4）</div>
+      <div class="train-row">
+        <select id="train-skill" class="train-select">${SKILLS.map(s=>`<option value="${s.id}">${s.icon} ${s.name}（${lvl(s.id)}级 · ${fmt(trainCost(s.id))} 金）</option>`).join('')}</select>
+        <button class="btn btn-primary btn-sm" onclick="trainSelected()">训练 +1 级</button>
+      </div>
+    </div>
+    <div class="shop-note" style="margin-top:14px">🏪 用金币快速购买基础物资、强化石与<b>招财符</b>（售价为物品价值的 2 倍）。<b>工具需在对应技能中自行制造并逐阶升级</b>。</div>`;
+  ['charm1','charm2','charm3'].forEach(id=>{
+    const it=ITEMS[id]; if(!it) return;
+    html+=`<div class="shop-row" style="background:#fff8f0;border-color:#f4d9b0">
+      <span class="e">${it.icon}</span>
+      <span class="nm">${esc(it.name)}<br><small style="color:var(--muted)">金币获取 +${Math.round((it.mult-1)*100)}% · 持续 ${Math.floor(it.dur/60)} 分钟</small></span>
+      <span class="pr">${fmt(it.val*2)} 金币</span>
+      <button class="btn btn-ghost btn-sm buy" onclick="buyItem('${id}')">购买</button>
+    </div>`;
+  });
   saleable.forEach(id=>{
     const it=ITEMS[id]; if(!it) return;
     const price=it.val*2;

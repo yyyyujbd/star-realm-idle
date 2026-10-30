@@ -757,6 +757,25 @@ STONE_PREFIX.forEach((p,i)=>{
   act('alchemy','alchstone'+(i+1), ITEMS[id].name, '💠', TIER[i].lvl, 4+i*0.5, 14*(i+1), {['herb'+(i+1)]:1, ['ore'+(i+1)]:1}, [{id, qty:1}]);
 });
 
+/* 工具制造材料：每个技能对应的基础资源线（用于制造/升级工具） */
+const TOOL_MAT = {
+  milking:'milk', foraging:'fiber', woodcutting:'log', mining:'ore', fishing:'fish',
+  cheesesmithing:'cheese', crafting:'plank', tailoring:'cloth',
+  cooking:'fish', brewing:'herb', alchemy:'herb',
+};
+/* 生成「制造工具」与「逐阶升级工具」动作：工具需自己制造，无法直接购买 */
+(function buildToolActions(){
+  for(const skillId in TOOL_BASE){
+    const B=TOOL_BASE[skillId], line=TOOL_MAT[skillId];
+    // 制造 1 阶工具（5 级解锁）
+    act(skillId, 'toolmake_'+skillId, '制造·'+TOOL_PREFIX[0]+B.name, B.icon, 5, 3, 10, {[line+'1']:3}, [{id:'tool_'+skillId+'1', qty:1}]);
+    // 逐阶升级：tier i → tier i+1（消耗当前阶工具 + 下一阶材料）
+    for(let i=1;i<5;i++){
+      act(skillId, 'toolup_'+skillId+'_'+(i+1), '升级·'+TOOL_PREFIX[i]+B.name, B.icon, TIER[i].lvl, 4+i*0.6, 14*(i+1), {['tool_'+skillId+i]:1, [line+(i+1)]:2}, [{id:'tool_'+skillId+(i+1), qty:1}]);
+    }
+  }
+})();
+
 /* ================= 数据：怪物 ================= */
 const MONSTERS = [
   {id:'slime', name:'草原史莱姆', icon:'🟢', lvl:1,  hp:12,   maxHit:3,  def:0,  gold:6,   xp:10,  interval:2.6, drops:[{id:'fiber1',chance:.3,qty:[1,2]},{id:'herb1',chance:.25,qty:[1,1]}]},
@@ -1160,7 +1179,7 @@ function addXp(skillId, amount, silent){
 function addItem(id, qty){ if(qty<=0) return; state.bank[id]=(state.bank[id]||0)+qty; }
 function removeItem(id, qty){ const cur=state.bank[id]||0; state.bank[id]=Math.max(0,cur-qty); if(state.bank[id]===0) delete state.bank[id]; }
 function countItem(id){ return state.bank[id]||0; }
-function hasItems(map){ for(const k in map) if((state.bank[k]||0)<map[k]) return false; return true; }
+function hasItems(map){ for(const k in map){ let have=state.bank[k]||0; if(TOOLS[k] && state.tools[TOOLS[k].skillId]===k) have++; if(have<map[k]) return false; } return true; }
 
 /* ================= 装备 ================= */
 function getEquipped(slot){ const id=state.equipment[slot]; return id?EQUIPMENT[id]:null; }
@@ -1203,7 +1222,7 @@ function unequipTool(skillId){
 }
 function pickTool(skillId){
   const candidates=Object.keys(state.bank).filter(id=>TOOLS[id] && TOOLS[id].skillId===skillId);
-  if(!candidates.length){ toast('背包中没有该技能的工具（可在商店购买）'); return; }
+  if(!candidates.length){ toast('背包中没有该技能的工具（可通过该技能自行制造）'); return; }
   const items=candidates.map(id=>{
     const T=TOOLS[id];
     return `<div class="shop-row" style="cursor:pointer" onclick="equipTool('${id}');closeModal()">
@@ -1521,7 +1540,19 @@ function completeAction(silent, report){
   const a=getAction(state.action.skillId, state.action.actionId);
   if(!a) return false;
   if(a.in && !hasItems(a.in)){ if(!silent){ toast('材料不足，已停止'); pushLog('材料不足，自动停止','sys');} state.action=null; return false; }
-  if(a.in) for(const k in a.in) removeItem(k, a.in[k]);
+  // 工具类材料：优先消耗背包，若装备中正好是所需工具则一并消耗（升级装备中的工具）
+  let consumedEquippedSkill=null;
+  if(a.in){
+    for(const k in a.in){
+      let need=a.in[k];
+      if(TOOLS[k]){
+        const fromBank=Math.min(countItem(k), need);
+        if(fromBank>0) removeItem(k, fromBank);
+        need-=fromBank;
+        if(need>0 && state.tools[TOOLS[k].skillId]===k){ delete state.tools[TOOLS[k].skillId]; need--; consumedEquippedSkill=TOOLS[k].skillId; }
+      } else removeItem(k, a.in[k]);
+    }
+  }
   if(a.out){
     for(const o of a.out){
       if(o.eq){
@@ -1530,6 +1561,11 @@ function completeAction(silent, report){
       } else {
         let produced=false;
         if(o.chance===undefined || Math.random()<=o.chance){ produced=true; if(report) report.itemGain(o.id, o.qty||1); else addItem(o.id, o.qty||1); }
+        // 升级装备中的工具：自动装备产出新工具
+        if(produced && TOOLS[o.id] && consumedEquippedSkill===TOOLS[o.id].skillId && !state.tools[consumedEquippedSkill]){
+          if(report){ state.tools[consumedEquippedSkill]=o.id; }
+          else { removeItem(o.id, 1); state.tools[consumedEquippedSkill]=o.id; if(!silent) toast('已自动装备 '+TOOLS[o.id].name); }
+        }
         if(produced){
           if(!silent){
             updateTasks('collect', {itemId:o.id, qty:o.qty||1});
@@ -2009,7 +2045,7 @@ function renderSkill(el){
     const speedMult=actionSpeedMult(s.id);
     const time=a.time/speedMult;
     let io=`<div class="io-list">`;
-    if(a.in){ for(const k in a.in) io+=ioRowHTML(ITEMS[k].icon, ITEMS[k].name, a.in[k], countItem(k), a.in[k]); }
+    if(a.in){ for(const k in a.in){ const have=TOOLS[k]?(countItem(k)+(state.tools[TOOLS[k].skillId]===k?1:0)):countItem(k); io+=ioRowHTML(ITEMS[k].icon, ITEMS[k].name, a.in[k], have, a.in[k]); } }
     if(a.in && a.out) io+=`<div class="kv" style="margin:2px 0;color:var(--muted2)">↓</div>`;
     if(a.out){ for(const o of a.out){ if(o.eq){ const E=EQUIPMENT[o.eq]; io+=ioRowHTML(E.icon, E.name, 1); } else { const ch=o.chance!==undefined?`（${Math.round(o.chance*100)}%）`:''; io+=ioRowHTML(ITEMS[o.id].icon, ITEMS[o.id].name, o.qty+ch); } } }
     io+=`</div>`;
@@ -2355,9 +2391,8 @@ function sellItem(id, qty){
 }
 function renderShop(body){
   const saleable=['milk1','milk2','milk3','fiber1','fiber2','fiber3','log1','log2','log3','ore1','ore2','ore3','fish1','fish2','fish3','herb1','herb2','herb3','cheese1','plank1','cloth1','pot1','food1','tea1'];
-  for(const skillId in TOOL_BASE){ for(let i=1;i<=3;i++) saleable.push('tool_'+skillId+i); }
   for(let i=1;i<=3;i++) saleable.push('stone'+i);
-  let html=`<div class="shop-note">🏪 用金币快速购买基础物资、工具与强化石（售价为物品价值的 2 倍）。出售物品可在背包中进行。</div>`;
+  let html=`<div class="shop-note">🏪 用金币快速购买基础物资与强化石（售价为物品价值的 2 倍）。<b>工具需在对应技能中自行制造并逐阶升级</b>。出售物品可在背包中进行。</div>`;
   saleable.forEach(id=>{
     const it=ITEMS[id]; if(!it) return;
     const price=it.val*2;
